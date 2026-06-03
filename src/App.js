@@ -4,7 +4,7 @@ import BirthdayProblem from './components/BirthdayProblem';
 // import ProvingCorrectness from './components/ProvingCorrectness';
 // import ComputationalProblem from './components/ComputationalProblem';
 // import JenAndBerry from './components/JenAndBerry';
-import OracleProblem from './components/OracleProblem';
+// import OracleProblem from './components/OracleProblem';
 import './App.css';
 
 function App() {
