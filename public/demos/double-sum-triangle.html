@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Double sums — triangle region (interactive)</title>
+  <style>
+    :root {
+      --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+      --border-radius-md: 8px;
+      --color-background-info: #e8f0fe;
+      --color-border-info: #6b9bd1;
+      --color-text-info: #1a4a7a;
+      --color-background-warning: #fff3cd;
+      --color-border-warning: #c9a227;
+      --color-text-warning: #7a5c00;
+      --color-background-secondary: #f4f4f5;
+      --color-border-secondary: #d4d4d8;
+      --color-text-tertiary: #a1a1aa;
+      --color-border-tertiary: #e4e4e7;
+      --color-text-secondary: #52525b;
+      --color-text-primary: #18181b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 1.25rem;
+      max-width: 900px;
+      color: var(--color-text-primary);
+      background: #fff;
+    }
+    h1 { font-size: 1.1rem; margin: 0 0 0.25rem; }
+    .subtitle { font-size: 0.85rem; color: var(--color-text-secondary); margin: 0 0 1rem; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); border: 0;
+    }
+    .cell {
+      width: 38px; height: 38px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-family: var(--font-mono);
+      transition: background .18s, border-color .18s, color .18s;
+      flex-shrink: 0;
+    }
+    .cell-active { background: var(--color-background-info); border: 0.5px solid var(--color-border-info); color: var(--color-text-info); }
+    .cell-highlight { background: var(--color-background-warning); border: 0.5px solid var(--color-border-warning); color: var(--color-text-warning); }
+    .cell-visited { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); color: var(--color-text-tertiary); }
+    .cell-outside { background: transparent; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-tertiary); opacity: .3; }
+    .tab-btn {
+      padding: 6px 14px; font-size: 13px; border-radius: var(--border-radius-md);
+      border: 0.5px solid var(--color-border-secondary);
+      background: #fff; cursor: pointer; color: var(--color-text-primary);
+    }
+    .tab-btn.active {
+      background: var(--color-background-info);
+      color: var(--color-text-info);
+      border-color: var(--color-border-info);
+    }
+    .code-block {
+      font-family: var(--font-mono); font-size: 12px; line-height: 1.7;
+      background: var(--color-background-secondary);
+      border-radius: var(--border-radius-md); padding: 12px 16px;
+      color: var(--color-text-primary);
+    }
+    .hl-row { color: var(--color-text-warning); }
+    .hl-col { color: var(--color-text-info); }
+    button.ctrl {
+      padding: 6px 12px; font-size: 13px; border-radius: var(--border-radius-md);
+      border: 0.5px solid var(--color-border-secondary); background: #fff; cursor: pointer;
+    }
+    button.ctrl:hover { background: var(--color-background-secondary); }
+  </style>
+</head>
+<body>
+  <h1>Double sums — triangle region</h1>
+  <p class="subtitle">Toggle row-first vs column-first scanning. Same (i,j) pairs; different loop order.</p>
+  <h2 class="sr-only">Interactive triangle region for double sums. Toggle between row-first and column-first scanning to see how summation order can be swapped while covering the same (i,j) pairs.</h2>
+
+  <div style="padding:.75rem 0">
+    <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
+      <button type="button" class="tab-btn active" id="btn-row" onclick="setMode('row')">Scan rows — fix i first</button>
+      <button type="button" class="tab-btn" id="btn-col" onclick="setMode('col')">Scan columns — fix j first</button>
+    </div>
+
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+      <div>
+        <div style="display:flex;gap:4px;margin-bottom:4px;margin-left:32px" id="j-labels"></div>
+        <div id="grid-rows"></div>
+      </div>
+
+      <div style="flex:1;min-width:200px">
+        <div id="formula-box" style="font-family:var(--font-mono);font-size:15px;padding:12px 16px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:12px;line-height:1.8"></div>
+        <div id="step-text" style="font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:12px;min-height:2.8em"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button type="button" class="ctrl" onclick="step(-1)">← Prev</button>
+          <span style="font-size:12px;color:var(--color-text-secondary);min-width:72px;text-align:center" id="step-ind"></span>
+          <button type="button" class="ctrl" onclick="step(1)">Next →</button>
+          <button type="button" class="ctrl" onclick="togglePlay()" id="play-btn">▶ Play</button>
+        </div>
+        <div id="total-box" style="margin-top:14px;font-size:13px;min-height:1.4em"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;border-top:0.5px solid var(--color-border-tertiary);padding-top:1.25rem">
+      <p style="font-size:12px;color:var(--color-text-secondary);margin:0 0 8px">Code equivalent (n = 5, counting pairs):</p>
+      <div class="code-block" id="code-display"></div>
+      <p style="font-size:12px;color:var(--color-text-tertiary);margin:8px 0 0">Same loop body — switching order just changes which variable is outer.</p>
+    </div>
+  </div>
+
+  <script>
+    const N = 5;
+    let mode = 'row', step_ = 0, timer = null;
+
+    function setMode(m) {
+      mode = m; step_ = 0; stopPlay(); render();
+      document.getElementById('btn-row').classList.toggle('active', m === 'row');
+      document.getElementById('btn-col').classList.toggle('active', m === 'col');
+    }
+
+    function step(d) { step_ = Math.max(0, Math.min(N, step_ + d)); render(); }
+
+    function togglePlay() {
+      if (timer) { stopPlay(); return; }
+      if (step_ >= N) step_ = 0;
+      document.getElementById('play-btn').textContent = '⏸ Pause';
+      timer = setInterval(() => { step_++; render(); if (step_ >= N) stopPlay(); }, 820);
+    }
+    function stopPlay() {
+      if (timer) { clearInterval(timer); timer = null; }
+      document.getElementById('play-btn').textContent = '▶ Play';
+    }
+
+    function cellState(i, j) {
+      if (j > i) return 'outside';
+      if (step_ === 0) return 'active';
+      const hi = mode === 'row' ? (i === step_) : (j === step_);
+      if (hi) return 'highlight';
+      const vis = mode === 'row' ? (i < step_) : (j < step_);
+      return vis ? 'visited' : 'active';
+    }
+
+    function render() {
+      const jl = document.getElementById('j-labels');
+      jl.innerHTML = '<div style="display:flex;gap:4px">' +
+        Array.from({ length: N }, (_, j) =>
+          `<div style="width:38px;text-align:center;font-size:11px;color:var(--color-text-secondary)">${j === 0 ? 'j=1' : j + 1}</div>`
+        ).join('') + '</div>';
+
+      const gr = document.getElementById('grid-rows');
+      gr.innerHTML = '';
+      for (let i = 1; i <= N; i++) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:4px;margin-bottom:4px;align-items:center';
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'width:28px;font-size:11px;color:var(--color-text-secondary);text-align:right;flex-shrink:0';
+        lbl.textContent = i === 1 ? 'i=1' : String(i);
+        row.appendChild(lbl);
+        for (let j = 1; j <= N; j++) {
+          const c = document.createElement('div');
+          const st = cellState(i, j);
+          c.className = 'cell cell-' + st;
+          if (st !== 'outside') c.textContent = i + ',' + j;
+          row.appendChild(c);
+        }
+        gr.appendChild(row);
+      }
+
+      const fb = document.getElementById('formula-box');
+      const st = document.getElementById('step-text');
+      const si = document.getElementById('step-ind');
+      const tb = document.getElementById('total-box');
+
+      if (mode === 'row') {
+        if (step_ === 0) {
+          fb.innerHTML = '<span style="color:var(--color-text-warning)">Σ<sub>i=1</sub><sup>5</sup></span> <span style="color:var(--color-text-info)">Σ<sub>j=1</sub><sup>i</sup> 1</span>';
+          st.textContent = 'Outer loop picks i. Inner loop counts j from 1 up to i. Each row i contributes exactly i pairs.';
+          si.textContent = ''; tb.textContent = '';
+        } else {
+          fb.innerHTML = `<span style="color:var(--color-text-warning)">i = ${step_}</span>:  Σ<sub>j=1</sub><sup>${step_}</sup> 1 = <strong>${step_}</strong>`;
+          st.textContent = `Row i=${step_}: j runs 1 → ${step_}, so this row contributes ${step_} pair${step_ > 1 ? 's' : ''}.`;
+          si.textContent = `Row ${step_} of ${N}`;
+          if (step_ === N) {
+            const total = N * (N + 1) / 2;
+            tb.innerHTML = `<strong>Total: ${Array.from({ length: N }, (_, k) => k + 1).join(' + ')} = ${total} pairs</strong>`;
+          } else tb.textContent = '';
+        }
+      } else {
+        if (step_ === 0) {
+          fb.innerHTML = '<span style="color:var(--color-text-info)">Σ<sub>j=1</sub><sup>5</sup></span> <span style="color:var(--color-text-warning)">Σ<sub>i=j</sub><sup>5</sup> 1</span>';
+          st.textContent = 'Outer loop picks j. Inner loop counts i from j up to n. Column j has (n − j + 1) pairs.';
+          si.textContent = ''; tb.textContent = '';
+        } else {
+          const cnt = N - step_ + 1;
+          fb.innerHTML = `<span style="color:var(--color-text-info)">j = ${step_}</span>:  Σ<sub>i=${step_}</sub><sup>${N}</sup> 1 = <strong>${cnt}</strong>`;
+          st.textContent = `Column j=${step_}: i runs ${step_} → ${N}, so this column has ${cnt} pair${cnt > 1 ? 's' : ''}.`;
+          si.textContent = `Column ${step_} of ${N}`;
+          if (step_ === N) {
+            const total = N * (N + 1) / 2;
+            tb.innerHTML = `<strong>Total: ${Array.from({ length: N }, (_, j) => N - j).join(' + ')} = ${total} — same triangle!</strong>`;
+          } else tb.textContent = '';
+        }
+      }
+
+      const cd = document.getElementById('code-display');
+      const rowCode = `<span class="hl-row">for i in range(1, n+1):          # outer: i</span>\n  <span class="hl-col">for j in range(1, i+1):        # inner: j ≤ i</span>\n    process(i, j)`;
+      const colCode = `<span class="hl-col">for j in range(1, n+1):          # outer: j</span>\n  <span class="hl-row">for i in range(j, n+1):        # inner: i ≥ j</span>\n    process(i, j)`;
+      cd.innerHTML = '<pre style="margin:0;white-space:pre-wrap">' + (mode === 'row' ? rowCode : colCode) + '</pre>';
+    }
+
+    setMode('row');
+  </script>
+</body>
+</html>
