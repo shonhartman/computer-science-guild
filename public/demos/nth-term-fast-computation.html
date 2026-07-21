@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Recurrences: Computing the N-th Term Fast</title>
+<style>
+  :root {
+    --bg: #F5F6F8;
+    --panel: #FFFFFF;
+    --ink: #161A22;
+    --muted: #5A6472;
+    --accent: #177A5B;
+    --accent-soft: #177A5B1A;
+    --warn: #B4690E;
+    --line: #D8DCE2;
+    --code-bg: #EDF0F3;
+    --domino-v: #177A5B;
+    --domino-h: #B4690E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101613;
+      --panel: #17201B;
+      --ink: #E8EDE9;
+      --muted: #93A29A;
+      --accent: #3FBF8F;
+      --accent-soft: #3FBF8F22;
+      --warn: #E0A458;
+      --line: #2A362F;
+      --code-bg: #1D2822;
+      --domino-v: #3FBF8F;
+      --domino-h: #E0A458;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101613;
+    --panel: #17201B;
+    --ink: #E8EDE9;
+    --muted: #93A29A;
+    --accent: #3FBF8F;
+    --accent-soft: #3FBF8F22;
+    --warn: #E0A458;
+    --line: #2A362F;
+    --code-bg: #1D2822;
+    --domino-v: #3FBF8F;
+    --domino-h: #E0A458;
+  }
+  :root[data-theme="light"] {
+    --bg: #F5F6F8;
+    --panel: #FFFFFF;
+    --ink: #161A22;
+    --muted: #5A6472;
+    --accent: #177A5B;
+    --accent-soft: #177A5B1A;
+    --warn: #B4690E;
+    --line: #D8DCE2;
+    --code-bg: #EDF0F3;
+    --domino-v: #177A5B;
+    --domino-h: #B4690E;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 3rem 1.25rem 6rem;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+
+  h1, h2, h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    text-wrap: balance;
+    line-height: 1.2;
+  }
+  h1 { font-size: 2.1rem; font-weight: 600; margin: 0 0 0.5rem; }
+  h2 { font-size: 1.45rem; font-weight: 600; margin: 3rem 0 0.75rem; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin: 2rem 0 0.5rem; }
+
+  .kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  .lede { color: var(--muted); font-size: 1.05rem; margin: 0 0 2.5rem; max-width: 40rem; }
+
+  .secnum {
+    color: var(--accent);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    margin-right: 0.5rem;
+  }
+
+  p { max-width: 42rem; }
+  code, .math {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+  .math { background: none; padding: 0; }
+
+  .display-math {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1rem;
+    text-align: center;
+    padding: 1.1rem 1rem;
+    margin: 1.25rem 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+
+  .matrix { display: inline-block; vertical-align: middle; padding: 0.2rem 0.5rem; border-left: 2px solid var(--ink); border-right: 2px solid var(--ink); border-radius: 4px; margin: 0 0.3rem; line-height: 1.5; }
+  .matrix .row { display: flex; gap: 1.1rem; justify-content: center; }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 6px 6px 0;
+    margin: 1.5rem 0;
+    max-width: 42rem;
+  }
+  .callout strong { color: var(--accent); }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    margin: 1rem 0;
+  }
+  .table-wrap { overflow-x: auto; }
+  th, td { text-align: left; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--line); }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  td.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  td .tag { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  .demo {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1.75rem 0;
+  }
+  .demo-label {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.68rem;
+    color: var(--warn);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+  .demo h3 { margin-top: 0; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 1rem 0; }
+  .controls label { font-size: 0.85rem; color: var(--muted); }
+  input[type="text"], input[type="range"] {
+    font: inherit;
+    color: var(--ink);
+  }
+  input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9rem;
+    width: 16rem;
+    max-width: 100%;
+  }
+  input[type="text"]:focus, button:focus-visible, input[type="range"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1.1rem;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.08); }
+  button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+
+  .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+  .stat .k { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  .stat .v { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.05rem; margin-top: 0.25rem; word-break: break-all; font-variant-numeric: tabular-nums; }
+  .stat .v.accent { color: var(--accent); }
+  .stat .v.warn { color: var(--warn); }
+
+  .tilings { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 1rem; }
+  .tiling { display: block; }
+  .tiling svg { display: block; }
+  .tilings-note { font-size: 0.85rem; color: var(--muted); margin-top: 0.75rem; }
+
+  .fib-note { font-size: 0.85rem; color: var(--muted); margin-top: 0.75rem; }
+  .err { color: var(--warn); font-size: 0.88rem; margin-top: 0.75rem; }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  hr { border: none; border-top: 1px solid var(--line); margin: 3rem 0; }
+  footer { color: var(--muted); font-size: 0.85rem; margin-top: 4rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="kicker">Algorithms · Guild session notes</div>
+  <h1>Linear Recurrences: Computing the N-th Term Fast</h1>
+  <p class="lede">How to jump straight to the 10<sup>18</sup>-th term of a sequence like Fibonacci — without computing the 10<sup>18</sup> − 1 terms before it.</p>
+
+  <h2><span class="secnum">1</span>What is a linear recurrence?</h2>
+  <p>A linear recurrence is any sequence where each value is a fixed linear combination of the previous <span class="math">d</span> values. The number <span class="math">d</span> is called the <strong>order</strong> of the recurrence.</p>
+  <div class="display-math">a(n) = c₁·a(n−1) + c₂·a(n−2) + … + c_d·a(n−d)</div>
+  <p>Fibonacci is the simplest interesting example — order 2, both coefficients equal to 1:</p>
+  <div class="display-math">F(n) = F(n−1) + F(n−2),&nbsp;&nbsp; F(0) = 0, F(1) = 1</div>
+  <p>These show up everywhere each state depends on a bounded window of previous states: counting problems, dynamic programming, random walks, population models.</p>
+
+  <h2><span class="secnum">2</span>Why the naive solution breaks down</h2>
+  <p>The obvious approach computes every term one by one. For an order-<span class="math">d</span> recurrence that costs <strong class="math">O(d·N)</strong> — each of the <span class="math">N</span> steps does <span class="math">d</span> multiplications.</p>
+  <p>Fine for <span class="math">N = 10⁶</span>. Hopeless for <span class="math">N = 10¹⁸</span>: at a billion operations per second, the naive loop would run for roughly <strong>30 years</strong>. The fast solvers below compute the N-th term in time <em>logarithmic</em> in N — a few hundred operations instead of a quintillion.</p>
+
+  <h2><span class="secnum">3</span>The fast solvers</h2>
+
+  <h3>Matrix exponentiation — O(d³ log N)</h3>
+  <p>Package the last <span class="math">d</span> values into a vector, and express "advance one step" as multiplication by a fixed <strong>transition matrix</strong>. For Fibonacci:</p>
+  <div class="display-math">
+    <span class="matrix"><span class="row"><span>F(n+1)</span></span><span class="row"><span>F(n)</span></span></span>
+    =
+    <span class="matrix"><span class="row"><span>1</span><span>1</span></span><span class="row"><span>1</span><span>0</span></span></span>
+    ·
+    <span class="matrix"><span class="row"><span>F(n)</span></span><span class="row"><span>F(n−1)</span></span></span>
+    &nbsp;&nbsp;so&nbsp;&nbsp;
+    <span class="matrix"><span class="row"><span>F(n+1)</span></span><span class="row"><span>F(n)</span></span></span>
+    =
+    <span class="matrix"><span class="row"><span>1</span><span>1</span></span><span class="row"><span>1</span><span>0</span></span></span><sup>n</sup>
+    ·
+    <span class="matrix"><span class="row"><span>F(1)</span></span><span class="row"><span>F(0)</span></span></span>
+  </div>
+  <p>Advancing N steps means raising the matrix to the N-th power — and powers can be computed by <strong>repeated squaring</strong> (binary exponentiation), exactly like fast exponentiation of numbers. Only <span class="math">log₂ N ≈ 60</span> squarings are needed for <span class="math">N = 10¹⁸</span>. Each matrix multiply costs <span class="math">O(d³)</span>, giving <strong class="math">O(d³ log N)</strong> total. For small recurrences like Fibonacci this is the simplest and most popular solution.</p>
+
+  <div class="demo">
+    <div class="demo-label">Live demo · runs in your browser</div>
+    <h3>F(N) mod 10⁹+7, for N up to 10¹⁸</h3>
+    <p style="font-size:0.9rem; color:var(--muted); margin-top:0;">Real matrix exponentiation with BigInt. Try <code>1000000000000000000</code> — it's instant.</p>
+    <div class="controls">
+      <label for="fib-n">N =</label>
+      <input type="text" id="fib-n" value="1000000000000000000" inputmode="numeric" aria-label="Value of N">
+      <button id="fib-go">Compute F(N)</button>
+    </div>
+    <div class="result-grid" id="fib-results" hidden>
+      <div class="stat"><div class="k">F(N) mod 10⁹+7</div><div class="v accent" id="fib-val">—</div></div>
+      <div class="stat"><div class="k">Matrix squarings used</div><div class="v" id="fib-steps">—</div></div>
+      <div class="stat"><div class="k">Naive loop iterations</div><div class="v warn" id="fib-naive">—</div></div>
+      <div class="stat"><div class="k">Time in your browser</div><div class="v" id="fib-time">—</div></div>
+    </div>
+    <div class="err" id="fib-err" hidden></div>
+    <p class="fib-note">Answers are reported modulo the prime 10⁹+7 (the convention in competitive programming) because the exact value of F(10¹⁸) has about 209 quadrillion digits.</p>
+  </div>
+
+  <h3>Fiduccia's algorithm — O(d log d · log N)</h3>
+  <p>Fiduccia drops the matrix entirely. The recurrence becomes its <strong>characteristic polynomial</strong> (for Fibonacci: <span class="math">x² − x − 1</span>), and computing the N-th term reduces to computing <span class="math">xᴺ mod (characteristic polynomial)</span> — binary exponentiation again, but on polynomials of degree &lt; d instead of d×d matrices. With FFT-based polynomial multiplication each step costs <span class="math">O(d log d)</span> instead of <span class="math">O(d³)</span>, which is a huge win for high-order recurrences (d in the thousands).</p>
+
+  <h3>Bostan–Mori — same asymptotics, faster in practice</h3>
+  <p>Bostan–Mori (2020) is one of the fastest known general algorithms. It views the sequence as a rational generating function <span class="math">P(x)/Q(x)</span> and extracts the N-th coefficient by repeatedly halving N, using the identity that multiplying numerator and denominator by <span class="math">Q(−x)</span> makes the denominator a polynomial in <span class="math">x²</span>. Same <strong class="math">O(d log d · log N)</strong> complexity as Fiduccia, but with a smaller constant — fewer polynomial multiplications per halving step. Think of it as the modern refinement of Fiduccia's idea.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Complexity</th><th>When to use</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Naive loop</td><td class="mono">O(d·N)</td><td>Small N, or when you need every term anyway</td></tr>
+        <tr><td>Matrix exponentiation</td><td class="mono">O(d³ log N)</td><td><span class="tag">most common</span> small d, huge N — simplest to code</td></tr>
+        <tr><td>Fiduccia</td><td class="mono">O(d log d · log N)</td><td>Large d (hundreds+), huge N</td></tr>
+        <tr><td>Bostan–Mori</td><td class="mono">O(d log d · log N)</td><td>Same as Fiduccia, smaller constant — best in practice</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="secnum">4</span>Where this shows up in CS</h2>
+
+  <h3>Domino tilings</h3>
+  <p>Count the ways to cover a 2 × N board with 2 × 1 dominoes. The leftmost column is covered either by one vertical domino (leaving a 2 × (N−1) board) or by two stacked horizontal dominoes (leaving 2 × (N−2)). So:</p>
+  <div class="display-math">T(N) = T(N−1) + T(N−2) — exactly the Fibonacci recurrence</div>
+
+  <div class="demo">
+    <div class="demo-label">Live demo · every tiling, enumerated</div>
+    <h3>Tilings of a 2 × N board</h3>
+    <div class="controls">
+      <label for="board-n">N = <span id="board-n-val" class="mono">4</span></label>
+      <input type="range" id="board-n" min="1" max="9" value="4" aria-label="Board width N">
+    </div>
+    <div class="result-grid">
+      <div class="stat"><div class="k">Number of tilings</div><div class="v accent" id="tiling-count">—</div></div>
+      <div class="stat"><div class="k">Fibonacci check</div><div class="v" id="tiling-fib">—</div></div>
+    </div>
+    <div class="tilings" id="tilings"></div>
+    <p class="tilings-note"><span style="color:var(--domino-v)">■</span> vertical domino &nbsp;·&nbsp; <span style="color:var(--domino-h)">■</span> horizontal pair. Richer tile sets (trominoes, L-pieces) give higher-order linear recurrences — same fast solvers apply.</p>
+  </div>
+
+  <h3>Fibonacci heaps</h3>
+  <p>The name comes from the analysis, not the implementation. The key lemma: in a Fibonacci heap, any node of degree <span class="math">k</span> has at least <strong class="math">F(k+2)</strong> nodes in its subtree. Because Fibonacci numbers grow exponentially (<span class="math">F(k) ≈ φᵏ/√5</span>), a heap of n nodes can only contain nodes of degree <strong class="math">O(log n)</strong>. That bound on the maximum degree is precisely what makes <code>decrease-key</code> run in O(1) amortized time and gives the heap its famous amortized bounds.</p>
+
+  <h3>And beyond</h3>
+  <p>Counting walks of length N in a graph (adjacency matrix to the N-th power), analyzing linear-feedback shift registers in cryptography, probability of states after N steps of a Markov chain, and squeezing dynamic programming solutions past tight time limits in competitive programming.</p>
+
+  <h2><span class="secnum">5</span>The takeaway</h2>
+  <div class="callout">
+    <p style="margin:0;"><strong>The skill worth keeping isn't the algorithms — it's the recognition.</strong> When each state depends on a fixed number of previous states, the problem is a linear recurrence, and an O(N) solution can usually become O(log N). Matrix exponentiation covers 95% of real cases; Fiduccia and Bostan–Mori exist for when the order d gets large.</p>
+  </div>
+  <p>You probably won't reach for these in everyday web development. You will meet them in competitive programming, algorithmic interviews, DP optimization, graph problems, cryptography, and mathematical software.</p>
+
+  <hr>
+
+  <h2>Appendix: matrix exponentiation in ~20 lines</h2>
+  <pre><code>const MOD = 1_000_000_007n;
+
+function matMul(A, B) {          // 2x2 matrices of BigInt
+  return [
+    [(A[0][0]*B[0][0] + A[0][1]*B[1][0]) % MOD, (A[0][0]*B[0][1] + A[0][1]*B[1][1]) % MOD],
+    [(A[1][0]*B[0][0] + A[1][1]*B[1][0]) % MOD, (A[1][0]*B[0][1] + A[1][1]*B[1][1]) % MOD],
+  ];
+}
+
+function fib(n) {                // F(n) mod 1e9+7, n as BigInt
+  let result = [[1n, 0n], [0n, 1n]];   // identity
+  let base   = [[1n, 1n], [1n, 0n]];   // transition matrix
+  while (n > 0n) {
+    if (n & 1n) result = matMul(result, base);
+    base = matMul(base, base);         // repeated squaring
+    n >>= 1n;
+  }
+  return result[1][0];                 // F(n)
+}</code></pre>
+  <p>This exact code powers the demo above. Sixty squarings instead of a quintillion additions.</p>
+
+  <footer>Session notes on linear recurrences — naive O(d·N) vs. matrix exponentiation O(d³ log N) vs. Fiduccia / Bostan–Mori O(d log d · log N).</footer>
+</main>
+
+<script>
+(function () {
+  var MOD = 1000000007n;
+
+  function matMul(A, B) {
+    return [
+      [(A[0][0]*B[0][0] + A[0][1]*B[1][0]) % MOD, (A[0][0]*B[0][1] + A[0][1]*B[1][1]) % MOD],
+      [(A[1][0]*B[0][0] + A[1][1]*B[1][0]) % MOD, (A[1][0]*B[0][1] + A[1][1]*B[1][1]) % MOD],
+    ];
+  }
+
+  function fibMod(n) {
+    var result = [[1n, 0n], [0n, 1n]];
+    var base = [[1n, 1n], [1n, 0n]];
+    var steps = 0;
+    while (n > 0n) {
+      if (n & 1n) result = matMul(result, base);
+      base = matMul(base, base);
+      n >>= 1n;
+      steps++;
+    }
+    return { value: result[1][0], steps: steps };
+  }
+
+  function groupDigits(s) {
+    return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  var input = document.getElementById('fib-n');
+  var results = document.getElementById('fib-results');
+  var errEl = document.getElementById('fib-err');
+
+  function runFib() {
+    var raw = input.value.trim().replace(/[,_\s]/g, '');
+    errEl.hidden = true;
+    if (!/^\d+$/.test(raw)) {
+      results.hidden = true;
+      errEl.textContent = 'Enter a non-negative integer (digits only).';
+      errEl.hidden = false;
+      return;
+    }
+    if (raw.length > 19 || (raw.length === 19 && BigInt(raw) > 1000000000000000000n)) {
+      results.hidden = true;
+      errEl.textContent = 'Keep N at or below 10^18 for this demo.';
+      errEl.hidden = false;
+      return;
+    }
+    var n = BigInt(raw);
+    var t0 = performance.now();
+    var out = fibMod(n);
+    var t1 = performance.now();
+    document.getElementById('fib-val').textContent = out.value.toString();
+    document.getElementById('fib-steps').textContent = out.steps + ' (= bits of N)';
+    document.getElementById('fib-naive').textContent = n === 0n ? '0' : groupDigits(n.toString());
+    var ms = t1 - t0;
+    document.getElementById('fib-time').textContent = ms < 1 ? '< 1 ms' : ms.toFixed(1) + ' ms';
+    results.hidden = false;
+  }
+
+  document.getElementById('fib-go').addEventListener('click', runFib);
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') runFib(); });
+  runFib();
+
+  // ---- Domino tilings ----
+  // Enumerate all tilings of 2xN. Each tiling is a list of pieces:
+  // {type:'v', col} or {type:'h', col} (horizontal pair covering col, col+1).
+  function enumerate(n) {
+    if (n === 0) return [[]];
+    if (n < 0) return [];
+    var out = [];
+    enumerate(n - 1).forEach(function (t) {
+      out.push(t.concat([{ type: 'v', col: n - 1 }]));
+    });
+    enumerate(n - 2).forEach(function (t) {
+      out.push(t.concat([{ type: 'h', col: n - 2 }]));
+    });
+    return out;
+  }
+
+  function fibSmall(n) { // F(n) plain
+    var a = 0, b = 1;
+    for (var i = 0; i < n; i++) { var t = a + b; a = b; b = t; }
+    return a;
+  }
+
+  var CELL = 22, GAP = 3;
+  function renderTiling(pieces, n) {
+    var w = n * CELL, h = 2 * CELL;
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('role', 'img');
+    pieces.forEach(function (p) {
+      function rect(x, y, rw, rh, fill) {
+        var r = document.createElementNS(svgNS, 'rect');
+        r.setAttribute('x', x + GAP / 2); r.setAttribute('y', y + GAP / 2);
+        r.setAttribute('width', rw - GAP); r.setAttribute('height', rh - GAP);
+        r.setAttribute('rx', 3);
+        r.setAttribute('fill', fill);
+        svg.appendChild(r);
+      }
+      var styles = getComputedStyle(document.documentElement);
+      var vColor = styles.getPropertyValue('--domino-v').trim();
+      var hColor = styles.getPropertyValue('--domino-h').trim();
+      if (p.type === 'v') {
+        rect(p.col * CELL, 0, CELL, 2 * CELL, vColor);
+      } else {
+        rect(p.col * CELL, 0, 2 * CELL, CELL, hColor);
+        rect(p.col * CELL, CELL, 2 * CELL, CELL, hColor);
+      }
+    });
+    var wrap = document.createElement('span');
+    wrap.className = 'tiling';
+    wrap.appendChild(svg);
+    return wrap;
+  }
+
+  var slider = document.getElementById('board-n');
+  var nVal = document.getElementById('board-n-val');
+  var tilingsEl = document.getElementById('tilings');
+
+  function renderBoard() {
+    var n = parseInt(slider.value, 10);
+    nVal.textContent = n;
+    var all = enumerate(n);
+    document.getElementById('tiling-count').textContent = all.length;
+    document.getElementById('tiling-fib').textContent = 'F(' + (n + 1) + ') = ' + fibSmall(n + 1);
+    tilingsEl.innerHTML = '';
+    all.forEach(function (t) { tilingsEl.appendChild(renderTiling(t, n)); });
+  }
+
+  slider.addEventListener('input', renderBoard);
+  renderBoard();
+})();
+</script>
+</body>
+</html>
