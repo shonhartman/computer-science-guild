@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inhomogeneous Recurrences: The Three-Step Method</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #E0E0E0;
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #FFFFFF;
+            margin-bottom: 6px;
+        }
+
+        h2 {
+            color: #90CAF9;
+            font-weight: 400;
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: #1E1E1E;
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            border: 1px solid #2C2C2C;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            color: #FFFFFF;
+            margin-top: 0;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+
+        /* Flowchart steps */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .step-box {
+            background: #262626;
+            padding: 16px;
+            border-radius: 8px;
+            border-top: 4px solid #4CAF50;
+        }
+
+        .step-number {
+            font-size: 0.85rem;
+            color: #4CAF50;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .step-title {
+            font-size: 1.05rem;
+            color: #FFF;
+            margin: 6px 0;
+        }
+
+        .step-desc {
+            font-size: 0.9rem;
+            color: #AAA;
+            line-height: 1.4;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            background-color: #2A2A2A;
+            color: #90CAF9;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #222222;
+        }
+
+        .code-inline {
+            font-family: "Courier New", Courier, monospace;
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #FFCC80;
+        }
+
+        /* Examples layout */
+        .examples-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .example-box {
+            background: #252525;
+            padding: 16px 20px;
+            border-radius: 8px;
+        }
+
+        .example-box.clean {
+            border-left: 4px solid #64B5F6;
+        }
+
+        .example-box.conflict {
+            border-left: 4px solid #FFB74D;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .badge.clean { background: #1E3A5F; color: #64B5F6; }
+        .badge.conflict { background: #4A3000; color: #FFB74D; }
+
+        .math-block {
+            font-family: "Courier New", Courier, monospace;
+            background: #181818;
+            padding: 12px;
+            border-radius: 6px;
+            color: #E0E0E0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 10px 0;
+        }
+
+        .highlight-red { color: #FF6B6B; font-weight: bold; }
+        .highlight-green { color: #81C784; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Inhomogeneous Recurrences</h1>
+    <h2>The Three-Step Method & The Rescue Rule</h2>
+
+    <div class="container">
+
+        <!-- 1. Three-Step Process Overview -->
+        <div class="card">
+            <h3 class="card-title">The Three-Step Method</h3>
+            <div class="steps-grid">
+                <div class="step-box">
+                    <div class="step-number">Step 1</div>
+                    <div class="step-title">Solve Homogeneous</div>
+                    <div class="step-desc">Set <span class="code-inline">g(n) = 0</span>. Find characteristic roots and write general solution <span class="code-inline">f_h(n)</span> with undetermined constants.</div>
+                </div>
+                <div class="step-box">
+                    <div class="step-number">Step 2</div>
+                    <div class="step-title">Guess Particular</div>
+                    <div class="step-desc">Match <span class="code-inline">g(n)</span>'s shape for <span class="code-inline">f_p(n)</span>. If guess base matches a homogeneous root, multiply by <span class="code-inline">n</span>!</div>
+                </div>
+                <div class="step-box">
+                    <div class="step-number">Step 3</div>
+                    <div class="step-title">Combine & Apply Bounds</div>
+                    <div class="step-desc">Combine <span class="code-inline">f(n) = f_h(n) + f_p(n)</span>, then use boundary conditions <span class="code-inline">f(0), f(1)</span> to solve for constants.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Ansatz Table -->
+        <div class="card">
+            <h3 class="card-title">Ansatz Table (Particular Solution Guesses)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Forcing Term g(n)</th>
+                        <th>Standard Particular Guess</th>
+                        <th>Rescue Rule (If Guess Base = Root)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="code-inline">bⁿ</span> (Exponential)</td>
+                        <td><span class="code-inline">A · bⁿ</span></td>
+                        <td>Multiply by n: <span class="code-inline">(A·n + B) · bⁿ</span></td>
+                    </tr>
+                    <tr>
+                        <td>Polynomial (degree k)</td>
+                        <td>Degree-k polynomial</td>
+                        <td>Multiply by n: <span class="code-inline">nʳ · (Polynomial)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Mixed (<span class="code-inline">bⁿ + n</span>)</td>
+                        <td>Guess each piece, then add</td>
+                        <td>Apply n-multiplier fix only to the failing piece</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 3. Worked Examples Comparison -->
+        <div class="card">
+            <h3 class="card-title">Worked Examples Comparison</h3>
+            <div class="examples-grid">
+                
+                <!-- Example 1 -->
+                <div class="example-box clean">
+                    <span class="badge clean">EXAMPLE 1: CLEAN CASE</span>
+                    <div><strong>Recurrence:</strong> <span class="code-inline">f(n) = 4f(n-1) + 3ⁿ</span>, <span class="code-inline">f(1) = 1</span></div>
+                    
+                    <div class="math-block">
+                        1. Homogeneous root: &alpha; = 4<br>
+                        &nbsp;&nbsp;&nbsp;f_h(n) = c₁ · 4ⁿ<br><br>
+                        2. Guess f_p(n) = A · 3ⁿ (Base 3 &ne; Root 4)<br>
+                        &nbsp;&nbsp;&nbsp;A · 3ⁿ = 4(A · 3ⁿ⁻¹) + 3ⁿ<br>
+                        &nbsp;&nbsp;&nbsp;&rArr; <span class="highlight-green">A = -3</span> (Works cleanly!)<br><br>
+                        3. Combine & Apply f(1) = 1:<br>
+                        &nbsp;&nbsp;&nbsp;<span class="highlight-green">f(n) = (5/2)4ⁿ - 3ⁿ⁺¹</span>
+                    </div>
+                </div>
+
+                <!-- Example 2 -->
+                <div class="example-box conflict">
+                    <span class="badge conflict">EXAMPLE 2: ROOT CONFLICT</span>
+                    <div><strong>Recurrence:</strong> <span class="code-inline">f(n) = 2f(n-1) + 2ⁿ</span>, <span class="code-inline">f(0) = 1</span></div>
+                    
+                    <div class="math-block">
+                        1. Homogeneous root: &alpha; = 2<br>
+                        &nbsp;&nbsp;&nbsp;f_h(n) = c₁ · 2ⁿ<br><br>
+                        2. Naive Guess f_p(n) = A · 2ⁿ (Base 2 = Root 2)<br>
+                        &nbsp;&nbsp;&nbsp;A · 2ⁿ = 2(A · 2ⁿ⁻¹) + 2ⁿ<br>
+                        &nbsp;&nbsp;&nbsp;&rArr; <span class="highlight-red">A = A + 1 (Contradiction!)</span><br><br>
+                        <span class="highlight-green">&check; RESCUE:</span> Guess f_p(n) = (A·n + B)2ⁿ<br>
+                        &nbsp;&nbsp;&nbsp;&rArr; A = 1, B = 0<br><br>
+                        3. Combine & Apply f(0) = 1:<br>
+                        &nbsp;&nbsp;&nbsp;<span class="highlight-green">f(n) = 2ⁿ + n · 2ⁿ</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

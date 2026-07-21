@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Equation That Gets Pushed</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --navy: #171F2B;
+    --navy-2: #1F2A3A;
+    --parchment: #F2E9D8;
+    --parchment-dim: #C9C0AC;
+    --gold: #C9A227;
+    --gold-bright: #E8C158;
+    --coral: #E2643C;
+    --sage: #6E9483;
+    --line: rgba(242,233,216,0.14);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--navy);
+    color:var(--parchment);
+    font-family:'Inter',sans-serif;
+    overflow:hidden;
+  }
+
+  .deck{
+    position:relative;
+    width:100%; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .slide{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:60px 8vw 90px 8vw;
+    opacity:0;
+    transform:translateY(14px);
+    transition:opacity .45s ease, transform .45s ease;
+  }
+  .slide.active{
+    display:flex;
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:12.5px;
+    color:var(--gold-bright);
+    margin-bottom:18px;
+  }
+
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(30px,4.6vw,58px);
+    line-height:1.05;
+    margin:0 0 20px 0;
+    text-align:center;
+    max-width:980px;
+  }
+  h1 .hl{ color:var(--gold-bright); font-style:italic; font-weight:600;}
+
+  .sub{
+    font-size:clamp(15px,1.5vw,19px);
+    color:var(--parchment-dim);
+    max-width:640px;
+    text-align:center;
+    line-height:1.55;
+    margin-bottom:8px;
+  }
+
+  .content-row{
+    display:flex; align-items:center; justify-content:center; gap:60px;
+    width:100%; max-width:1100px; flex-wrap:wrap;
+  }
+
+  .big-stat{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(70px,11vw,150px);
+    line-height:.9;
+    color:var(--gold-bright);
+  }
+  .big-stat .unit{
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:0.24em;
+    color:var(--parchment-dim);
+    display:block;
+    margin-top:10px;
+    letter-spacing:.02em;
+  }
+
+  /* ---- Staircase progress signature ---- */
+  .staircase{
+    position:absolute;
+    bottom:34px; left:0; right:0;
+    display:flex; justify-content:center; align-items:flex-end;
+    gap:10px;
+    height:56px;
+    pointer-events:none;
+  }
+  .stair-step{
+    width:46px;
+    background:rgba(242,233,216,0.10);
+    border-radius:3px 3px 0 0;
+    transition: all .4s ease;
+    position:relative;
+  }
+  .stair-step.done{ background:var(--sage); }
+  .stair-step.current{ background:var(--gold); box-shadow:0 0 18px rgba(201,162,39,0.55); }
+  .stair-step .num{
+    position:absolute; top:-22px; left:0; right:0; text-align:center;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--parchment-dim);
+  }
+  .stair-step.current .num{ color:var(--gold-bright); }
+
+  /* nav */
+  .nav-hint{
+    position:absolute; top:26px; right:34px;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--parchment-dim);
+    letter-spacing:.05em;
+  }
+  .nav-hint kbd{
+    background:var(--navy-2); border:1px solid var(--line); border-radius:4px;
+    padding:2px 6px; color:var(--parchment); font-family:'JetBrains Mono',monospace;
+  }
+  .arrow-btn{
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:46px; height:46px; border-radius:50%;
+    border:1px solid var(--line); background:rgba(242,233,216,0.04);
+    color:var(--parchment); font-size:20px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .arrow-btn:hover{ background:rgba(201,162,39,0.18); border-color:var(--gold); }
+  .arrow-left{ left:24px; }
+  .arrow-right{ right:24px; }
+
+  /* --- SVG helpers --- */
+  svg text{ font-family:'JetBrains Mono',monospace; }
+  .node-box{ fill:var(--navy-2); stroke:var(--gold); stroke-width:1.6px; }
+  .node-box.faded{ stroke:var(--parchment-dim); opacity:.55; }
+  .flow-arrow{ stroke:var(--gold-bright); stroke-width:2.4px; fill:none; marker-end:url(#arrowhead); }
+  .flow-arrow.dim{ stroke:var(--sage); }
+  .eqn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(20px,2.6vw,32px);
+    color:var(--parchment);
+    text-align:center;
+    letter-spacing:.01em;
+  }
+  .eqn .accent{ color:var(--gold-bright); font-weight:700; }
+  .eqn.step{ margin:10px 0; }
+  .arrow-down{ color:var(--parchment-dim); font-size:22px; margin:2px 0; }
+
+  .caption{
+    font-size:14px; color:var(--parchment-dim); text-align:center; max-width:580px; margin-top:22px;
+  }
+
+  .badge-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:26px; }
+  .badge{
+    font-family:'JetBrains Mono',monospace; font-size:13px;
+    border:1px solid var(--line); border-radius:20px; padding:7px 16px;
+    color:var(--parchment-dim); background:rgba(242,233,216,0.03);
+  }
+
+  .examples-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:22px; max-width:920px; margin-top:10px;
+  }
+  .example-card{
+    border:1px solid var(--line); border-radius:10px; padding:22px 18px;
+    background:rgba(242,233,216,0.03); text-align:center;
+  }
+  .example-card .icon{ font-size:30px; margin-bottom:12px; }
+  .example-card h3{ font-family:'Fraunces',serif; font-size:17px; margin:0 0 8px 0; color:var(--gold-bright); font-weight:600;}
+  .example-card p{ font-size:13px; color:var(--parchment-dim); line-height:1.5; margin:0;}
+
+  .rule{
+    width:60px; height:2px; background:var(--gold); margin:22px 0; opacity:.6;
+  }
+
+  .table-wrap{ margin-top:18px; }
+  table.gform{
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+  }
+  table.gform th{
+    color:var(--gold-bright); text-align:left; padding:8px 22px;
+    border-bottom:1px solid var(--line); font-weight:500; letter-spacing:.04em;
+  }
+  table.gform td{
+    color:var(--parchment-dim); padding:8px 22px;
+    border-bottom:1px solid var(--line);
+  }
+  table.gform tr:last-child td{ border-bottom:none; }
+
+  @media (max-width: 760px){
+    .content-row{ gap:24px; }
+    .examples-grid{ grid-template-columns:1fr; }
+    .stair-step{ width:26px; }
+    table.gform th, table.gform td{ padding:6px 10px; font-size:12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="nav-hint"><kbd>&#8592;</kbd> <kbd>&#8594;</kbd> or space to advance</div>
+  <button class="arrow-btn arrow-left" onclick="go(-1)">&#8592;</button>
+  <button class="arrow-btn arrow-right" onclick="go(1)">&#8594;</button>
+
+  <!-- SLIDE 1: SETUP -->
+  <section class="slide active" data-idx="0">
+    <div class="eyebrow">Linear Differential Equations &mdash; &sect;1</div>
+    <h1>The Swing That Someone <span class="hl">Keeps Pushing</span></h1>
+    <p class="sub">Left alone, a swing just swings and settles. Push it on a rhythm, and its motion changes shape entirely.</p>
+    <div class="content-row" style="margin-top:28px;">
+      <div class="eqn" style="font-size:clamp(22px,3vw,34px);">y&Prime; + 3y&prime; + 2y <span class="accent">=</span> sin(x)</div>
+    </div>
+    <div class="badge-row">
+      <div class="badge">left side: the swing's own physics</div>
+      <div class="badge">right side: an outside push</div>
+      <div class="badge">the push depends on x, not on y</div>
+    </div>
+    <p class="caption">Question: once something is pushing back, how do you solve for the motion?</p>
+  </section>
+
+  <!-- SLIDE 2: THE REVEAL -->
+  <section class="slide" data-idx="1">
+    <div class="eyebrow">The reveal</div>
+    <h1>It's <span class="hl">two solutions</span> wearing one equation</h1>
+    <div class="eqn" style="margin-top:6px;">y <span class="accent">=</span> y<sub>c</sub> + y<sub>p</sub></div>
+    <p class="sub" style="margin-top:18px;">y<sub>c</sub> is how the system behaves with no push at all. y<sub>p</sub> is just enough extra motion to account for the push.</p>
+    <div class="rule"></div>
+    <p class="caption">Set the right side to zero and you get the <em>homogeneous</em> equation &mdash; solved first, always, because y<sub>c</sub> is baked into every answer.</p>
+  </section>
+
+  <!-- SLIDE 3: WHY -->
+  <section class="slide" data-idx="2">
+    <div class="eyebrow">Why it splits this way</div>
+    <h1>Linearity means the pieces <span class="hl">don't interfere</span></h1>
+    <svg viewBox="0 0 640 220" width="640" height="220" style="max-width:90vw;">
+      <defs>
+        <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#E8C158"/>
+        </marker>
+      </defs>
+      <rect x="20" y="70" width="180" height="70" rx="8" class="node-box"/>
+      <text x="110" y="100" fill="#F2E9D8" font-size="15" text-anchor="middle">L[y_c] = 0</text>
+      <text x="110" y="122" fill="#C9C0AC" font-size="12" text-anchor="middle">natural response</text>
+
+      <rect x="240" y="70" width="180" height="70" rx="8" class="node-box"/>
+      <text x="330" y="100" fill="#F2E9D8" font-size="15" text-anchor="middle">L[y_p] = g(x)</text>
+      <text x="330" y="122" fill="#C9C0AC" font-size="12" text-anchor="middle">forced response</text>
+
+      <rect x="460" y="70" width="160" height="70" rx="8" class="node-box" style="stroke:#E8C158; stroke-width:2.4px;"/>
+      <text x="540" y="100" fill="#E8C158" font-size="16" font-weight="700" text-anchor="middle">L[y_c+y_p]</text>
+      <text x="540" y="122" fill="#C9C0AC" font-size="12" text-anchor="middle">= g(x)</text>
+
+      <path d="M200,95 L235,95" class="flow-arrow"/>
+      <path d="M420,95 L455,95" class="flow-arrow"/>
+    </svg>
+    <div class="eqn" style="margin-top:10px;">L[y] <span class="accent">=</span> L[y<sub>c</sub>] + L[y<sub>p</sub>] <span class="accent">=</span> 0 + g(x)</div>
+    <p class="caption">Because L (the derivative-and-add operator) is linear, applying it to a sum equals the sum of applying it to each part. That's the whole trick.</p>
+  </section>
+
+  <!-- SLIDE 4: THE TRICK -->
+  <section class="slide" data-idx="3">
+    <div class="eyebrow">Finding y_p</div>
+    <h1>Guess a shape. Let <span class="hl">algebra</span> fix the constants</h1>
+    <p class="sub" style="margin-bottom:6px;">Undetermined coefficients: match the guess to the family g(x) belongs to.</p>
+    <div class="table-wrap">
+      <table class="gform">
+        <tr><th>g(x)</th><th>guess for y_p</th></tr>
+        <tr><td>e<sup>kx</sup></td><td>A&middot;e<sup>kx</sup></td></tr>
+        <tr><td>sin(x) or cos(x)</td><td>A&middot;sin(x) + B&middot;cos(x)</td></tr>
+        <tr><td>polynomial, degree n</td><td>full degree-n polynomial</td></tr>
+      </table>
+    </div>
+    <div class="arrow-down" style="margin-top:16px;">&#8595;</div>
+    <p class="caption" style="max-width:600px;">Plug the guess back into the equation, match up matching terms on both sides, and solve for the coefficients. If the guess overlaps y<sub>c</sub>, multiply it by x and try again.</p>
+  </section>
+
+  <!-- SLIDE 5: WORKED EXAMPLE -->
+  <section class="slide" data-idx="4">
+    <div class="eyebrow">Worked example</div>
+    <h1>Same swing. <span class="hl">Same rhythmic push.</span></h1>
+    <div class="eqn step">y&Prime; + 3y&prime; + 2y = sin(x)</div>
+    <div class="arrow-down">&#8595;</div>
+    <div class="eqn step">y<sub>c</sub> = C<sub>1</sub>e<sup>&minus;x</sup> + C<sub>2</sub>e<sup>&minus;2x</sup> &nbsp;<span style="color:#C9C0AC; font-size:0.6em;">(from &alpha;&sup2;+3&alpha;+2=0)</span></div>
+    <div class="arrow-down">&#8595;</div>
+    <div class="eqn step">y<sub>p</sub> = <span class="accent">(1/10)</span>sin(x) &minus; <span class="accent">(3/10)</span>cos(x)</div>
+    <div class="arrow-down">&#8595;</div>
+    <div class="eqn step" style="font-size:clamp(20px,2.6vw,30px);">
+      y = C<sub>1</sub>e<sup>&minus;x</sup> + C<sub>2</sub>e<sup>&minus;2x</sup> + (1/10)sin(x) &minus; (3/10)cos(x)
+    </div>
+    <p class="caption">As x grows, the e<sup>&minus;x</sup> and e<sup>&minus;2x</sup> terms decay to nothing &mdash; only the sine-driven y_p survives. The push outlasts the free swing.</p>
+  </section>
+
+  <!-- SLIDE 6: BIGGER PICTURE -->
+  <section class="slide" data-idx="5">
+    <div class="eyebrow">Why it matters beyond swings</div>
+    <h1>Something pushing on a system? <span class="hl">Split it in two.</span></h1>
+    <div class="examples-grid">
+      <div class="example-card">
+        <div class="icon">🔌</div>
+        <h3>RLC circuits</h3>
+        <p>An applied voltage is the forcing function; the circuit's own resistance and reactance give y_c.</p>
+      </div>
+      <div class="example-card">
+        <div class="icon">🚗</div>
+        <h3>Car suspensions</h3>
+        <p>Bumps in the road force the system; the shock absorber's natural damping is the homogeneous part.</p>
+      </div>
+      <div class="example-card">
+        <div class="icon">📈</div>
+        <h3>Forced economies</h3>
+        <p>A one-time stimulus is g(x); the market's own supply-demand dynamics are the free response.</p>
+      </div>
+    </div>
+    <p class="caption" style="margin-top:26px; max-width:640px;">
+      No outside force, no independent-variable term on the right &mdash; homogeneous, and the system just does what it does.
+      Add a forcing function, and the answer becomes: what it would do anyway, plus what the push demands.
+    </p>
+  </section>
+
+  <div class="staircase" id="staircase"></div>
+</div>
+
+<script>
+  const total = document.querySelectorAll('.slide').length;
+  let idx = 0;
+
+  function renderStaircase(){
+    const el = document.getElementById('staircase');
+    el.innerHTML = '';
+    for(let i=0;i<total;i++){
+      const step = document.createElement('div');
+      step.className = 'stair-step';
+      step.style.height = (14 + i*8) + 'px';
+      if(i < idx) step.classList.add('done');
+      if(i === idx) step.classList.add('current');
+      const num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = i+1;
+      step.appendChild(num);
+      el.appendChild(step);
+    }
+  }
+
+  function render(){
+    document.querySelectorAll('.slide').forEach(s=>{
+      s.classList.toggle('active', Number(s.dataset.idx) === idx);
+    });
+    renderStaircase();
+  }
+
+  function go(delta){
+    idx = Math.min(total-1, Math.max(0, idx+delta));
+    render();
+  }
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowRight' || e.key === ' ') go(1);
+    if(e.key === 'ArrowLeft') go(-1);
+  });
+
+  render();
+</script>
+</body>
+</html>
