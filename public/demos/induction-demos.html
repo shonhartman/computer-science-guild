@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invariants &amp; Induction — live demos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f7fa;
+    --card:#ffffff;
+    --ink:#10172a;
+    --muted:#5b6678;
+    --line:#dce3ec;
+    --teal:#0e9384;
+    --teal-soft:#e2f5f1;
+    --red:#e23b3b;
+    --red-soft:#fdeaea;
+    --shadow:0 1px 2px rgba(16,23,42,.04), 0 8px 24px rgba(16,23,42,.06);
+    --display:"Space Grotesk", system-ui, sans-serif;
+    --body:"Space Grotesk", system-ui, sans-serif;
+    --mono:"JetBrains Mono", ui-monospace, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--body);
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:radial-gradient(var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 18px 64px;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+  header.top{margin-bottom:22px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:500;margin-bottom:6px}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4.5vw,40px);line-height:1.05;margin:0 0 8px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:15px;max-width:62ch;margin:0}
+
+  /* tabs */
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 18px}
+  .tab{
+    font-family:var(--body);font-weight:600;font-size:14px;
+    border:1px solid var(--line);background:var(--card);color:var(--muted);
+    padding:9px 14px;border-radius:10px;cursor:pointer;transition:all .15s ease;
+  }
+  .tab:hover{border-color:#bcc6d4;color:var(--ink)}
+  .tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tab .n{font-family:var(--mono);opacity:.55;margin-right:7px;font-size:12px}
+
+  .panel{display:none;animation:fade .25s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+  .card h2{font-family:var(--display);font-size:20px;margin:0 0 6px;letter-spacing:-.01em}
+  .card h3{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;font-weight:600}
+  .card p{font-size:14.5px;color:#2a3346;margin:0 0 12px}
+  .card p:last-child{margin-bottom:0}
+  .stage{min-height:60px}
+  .mono{font-family:var(--mono)}
+
+  /* invariant meter (signature) */
+  .meter{
+    display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);
+    border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;background:var(--paper);
+    transition:all .2s ease;
+  }
+  .meter .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
+  .meter.hold{border-color:var(--teal);color:var(--teal)}
+  .meter.broken{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+  .meter.broken .dot{background:var(--red);box-shadow:0 0 0 4px #f9d6d6}
+  .meter .lbl{color:var(--muted)}
+  .meter.hold .lbl{color:var(--teal)}
+  .meter.broken .lbl{color:var(--red)}
+
+  button.act{
+    font-family:var(--body);font-weight:600;font-size:13.5px;cursor:pointer;
+    border:1px solid var(--ink);background:var(--ink);color:#fff;
+    padding:9px 14px;border-radius:9px;transition:all .15s ease;
+  }
+  button.act:hover{opacity:.88}
+  button.ghost{background:var(--card);color:var(--ink)}
+  button.ghost:hover{background:var(--paper);opacity:1}
+  button.teal{background:var(--teal);border-color:var(--teal)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .note{font-size:13px;color:var(--muted);margin-top:12px}
+  .key{font-family:var(--mono);background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px}
+  .teal-t{color:var(--teal);font-weight:600}
+  .red-t{color:var(--red);font-weight:600}
+
+  /* dominoes */
+  .domino-stage{display:flex;align-items:flex-end;gap:18px;height:150px;padding:18px 6px 0;overflow-x:auto}
+  .domino{position:relative;flex:0 0 auto}
+  .domino .piece{
+    width:34px;height:96px;border-radius:6px;background:linear-gradient(180deg,#fff,#eef2f7);
+    border:1.5px solid var(--ink);transform-origin:bottom left;transition:transform .32s cubic-bezier(.5,0,.3,1);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .domino .piece .pn{font-family:var(--mono);font-size:11px;color:var(--muted);transform:rotate(-90deg);white-space:nowrap}
+  .domino.fallen .piece{transform:rotate(82deg);background:linear-gradient(180deg,var(--teal-soft),#fff);border-color:var(--teal)}
+  .domino.stuck .piece{border-color:var(--red);background:linear-gradient(180deg,var(--red-soft),#fff)}
+
+  /* puzzle */
+  .puzzle{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:240px;margin:0 auto}
+  .tile{
+    aspect-ratio:1;border-radius:10px;border:1.5px solid var(--ink);background:var(--card);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:24px;font-weight:700;
+    cursor:default;transition:all .12s ease;user-select:none;
+  }
+  .tile.blank{background:transparent;border:1.5px dashed var(--line)}
+  .tile.movable{cursor:pointer;border-color:var(--teal);color:var(--teal)}
+  .tile.movable:hover{background:var(--teal-soft)}
+  .arr{font-family:var(--mono);font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;letter-spacing:.18em;text-align:center;margin-top:14px}
+  .arr b{color:var(--red)}
+  .readout{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+  .stat{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .stat b{color:var(--ink);font-size:15px}
+  .goalbox{margin-top:6px}
+  .puzzle.mini{width:132px;gap:4px}
+  .puzzle.mini .tile{font-size:13px;border-width:1px;border-radius:7px}
+
+  /* ord vs strong */
+  .numline{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
+  .num{
+    width:40px;height:40px;border-radius:9px;border:1.5px solid var(--line);background:var(--card);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;color:var(--muted);
+    transition:all .18s ease;position:relative;
+  }
+  .num.assumed{background:var(--teal-soft);border-color:var(--teal);color:var(--teal);font-weight:700}
+  .num.target{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+  .num.need{box-shadow:0 0 0 3px #fde0a8;border-color:#e0a82e}
+  .num.need.miss{box-shadow:0 0 0 3px #f7c9c9;border-color:var(--red);color:var(--red)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:13px;height:13px;border-radius:4px;display:inline-block}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .toggle button{font-family:var(--body);font-weight:600;font-size:13px;border:0;background:var(--card);color:var(--muted);padding:8px 14px;cursor:pointer}
+  .toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+  /* unstacking */
+  .stacks{display:flex;gap:18px;align-items:flex-end;min-height:200px;padding:16px 6px;overflow-x:auto;flex-wrap:wrap}
+  .stack{display:flex;flex-direction:column-reverse;align-items:center;gap:0;position:relative}
+  .blk{
+    width:46px;height:20px;background:linear-gradient(180deg,#3aa6f0,#1f7fce);border:1px solid #1466a8;
+    border-radius:3px;margin:1px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+  }
+  .gap{height:9px;width:62px;margin:-4px 0;position:relative;cursor:pointer;border-radius:4px;z-index:2}
+  .gap:hover{background:rgba(14,147,132,.18)}
+  .gap::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:var(--teal);opacity:0;transform:scaleX(.4);transition:opacity .12s,transform .12s;border-radius:2px}
+  .gap:hover::after{opacity:1;transform:scaleX(1)}
+  .gap .tip{position:absolute;left:50%;top:-22px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--teal);background:var(--card);border:1px solid var(--teal);border-radius:6px;padding:1px 6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
+  .gap:hover .tip{opacity:1}
+  .stack .size{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px}
+  .scorebar{display:flex;flex-wrap:wrap;gap:14px;align-items:baseline;margin-bottom:6px}
+  .bignum{font-family:var(--mono);font-weight:700;font-size:30px;letter-spacing:-.01em}
+  .bignum.done{color:var(--teal)}
+  .splitlog{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:12px;min-height:20px;word-break:break-word}
+  .target-pill{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+
+  .footer{margin-top:26px;font-size:12.5px;color:var(--muted);font-family:var(--mono);text-align:center}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Computer Science Guild · live demos</div>
+    <h1>Invariants &amp; Induction</h1>
+    <p class="sub">Four things you can poke at while you talk. The thread through all of them: an <b>invariant</b> — a quantity that refuses to change no matter what you do. It makes the puzzle impossible and the game inevitable.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="induction"><span class="n">01</span>Induction</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="puzzle"><span class="n">02</span>The impossible puzzle</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="strong"><span class="n">03</span>Ordinary vs strong</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="unstack"><span class="n">04</span>Unstacking game</button>
+  </div>
+
+  <!-- ============ TAB 1: INDUCTION ============ -->
+  <section class="panel active" id="induction">
+    <div class="grid">
+      <div class="card">
+        <h2>Induction is dominoes</h2>
+        <p>To prove a statement <span class="mono">P(n)</span> holds for <i>every</i> n, you need two things:</p>
+        <p><b>1. Base case</b> — knock the first domino. Show <span class="mono">P(0)</span> is true.<br>
+        <b>2. Inductive step</b> — show each standing domino knocks the next: <span class="mono">P(k) ⟹ P(k+1)</span>.</p>
+        <p>Get both and the whole row falls — every <span class="mono">P(n)</span> is true. Miss <i>one</i> link and everything past it stays standing. That second button shows exactly that failure.</p>
+        <div class="btnrow">
+          <button class="act teal" id="knock">Knock the base case</button>
+          <button class="act ghost" id="breakchain">Break the step at P(4)</button>
+          <button class="act ghost" id="dreset">Reset</button>
+        </div>
+        <div class="note" id="dnote">Press “Knock the base case” to start the chain.</div>
+      </div>
+      <div class="card">
+        <h3>The chain</h3>
+        <div class="domino-stage stage" id="dominoes"></div>
+        <div style="margin-top:12px">
+          <span class="meter hold" id="dmeter"><span class="dot"></span><span>chain</span><span class="lbl">intact</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2: PUZZLE ============ -->
+  <section class="panel" id="puzzle">
+    <div class="grid">
+      <div class="card">
+        <h2>The 8-puzzle that can’t be solved</h2>
+        <p>Slide any tile next to the blank. Watch the <b>inversion count</b> jump around — but its <b>parity</b> (odd/even) never flips. That frozen parity is the invariant.</p>
+        <p><b>Row move</b> (sideways) changes inversions by <span class="mono">0</span>. <b>Column move</b> (up/down) changes them by <span class="mono">0 or ±2</span> — always even. So odd stays odd, forever.</p>
+        <p>The start has <b>1</b> inversion (odd). The goal has <b>0</b> (even). You can never cross from odd to even — so <span class="red-t">the goal is unreachable</span>. Try as long as you like.</p>
+        <div class="btnrow">
+          <button class="act" id="scramble">Scramble (legal moves)</button>
+          <button class="act ghost" id="preset">Reset to start</button>
+        </div>
+        <div class="note">An <b>inversion</b> = a pair of tiles where the bigger letter sits before the smaller one in reading order (left→right, top→bottom). The blank doesn’t count.</div>
+      </div>
+      <div class="card">
+        <h3>State <span style="text-transform:none;font-weight:400;color:#9aa6b6">(click a teal tile)</span></h3>
+        <div class="puzzle stage" id="grid"></div>
+        <div class="arr" id="flat"></div>
+        <div class="readout">
+          <span class="stat">inversions <b id="inv">1</b></span>
+          <span class="stat">moves <b id="moves">0</b></span>
+          <span class="meter hold" id="pmeter"><span class="dot"></span><span>parity</span><span class="lbl" id="paritylbl">odd ✓</span></span>
+        </div>
+        <div class="note" id="lastmove">No moves yet.</div>
+        <div class="goalbox">
+          <h3 style="margin-top:18px">Goal — 0 inversions (even)</h3>
+          <div class="puzzle mini" id="goalgrid"></div>
+          <div class="note"><span class="red-t">Even parity</span> — a place an odd start can never reach.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 3: ORDINARY VS STRONG ============ -->
+  <section class="panel" id="strong">
+    <div class="grid">
+      <div class="card">
+        <h2>What you’re allowed to assume</h2>
+        <p>Both prove <span class="mono">P(n+1)</span>. The difference is how far back you can look for help.</p>
+        <p><b>Ordinary:</b> assume only <span class="mono">P(n)</span> — the one step right before.<br>
+        <b>Strong:</b> assume <i>all</i> of <span class="mono">P(0) … P(n)</span> — the whole history.</p>
+        <p>They’re equally powerful. Strong is just easier when <span class="mono">P(n+1)</span> leans on <i>smaller</i> cases that aren’t the previous one. Hit the unstacking button: proving <span class="mono">P(8)</span> means splitting into <span class="mono">P(3)</span> and <span class="mono">P(5)</span> — ordinary can’t hand you those.</p>
+        <div class="btnrow">
+          <div class="toggle" role="group" aria-label="induction mode">
+            <button id="ordBtn" aria-pressed="true">Ordinary</button>
+            <button id="strBtn" aria-pressed="false">Strong</button>
+          </div>
+          <button class="act ghost" id="splitDemo">Prove P(8) via 3 + 5</button>
+        </div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--teal-soft);border:1.5px solid var(--teal)"></i> you may assume</span>
+          <span><i class="sw" style="background:var(--ink)"></i> proving now</span>
+          <span><i class="sw" style="background:#fde0a8;border:1.5px solid #e0a82e"></i> needed by the split</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3 id="modeTitle">Ordinary — one step back</h3>
+        <div class="numline stage" id="numline"></div>
+        <div class="note" id="strNote">Proving <span class="mono">P(8)</span>: you may assume only <span class="mono">P(7)</span>.</div>
+        <div style="margin-top:14px">
+          <span class="meter hold" id="smeter"><span class="dot"></span><span>reach</span><span class="lbl" id="reachlbl">1 step</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 4: UNSTACKING ============ -->
+  <section class="panel" id="unstack">
+    <div class="grid">
+      <div class="card">
+        <h2>The unstacking game</h2>
+        <p><b>Rules:</b> start with one stack of 8. Split any stack into two (sizes a and b). Score <span class="mono">a × b</span>. Keep splitting until everything is single blocks.</p>
+        <p>Click a <span class="teal-t">gap</span> in a stack to split it there. Or let it auto-play. Try wildly different strategies — you always land on <b>28</b>.</p>
+        <p><b>Why:</b> <span class="mono">a × b</span> is exactly the number of block-pairs separated by that split. Every pair gets separated once, so the total just counts all pairs: <span class="mono">C(8,2) = 8·7/2 = 28</span>.</p>
+        <div class="btnrow">
+          <button class="act ghost" id="autoBalanced">Auto: balanced</button>
+          <button class="act ghost" id="autoPeel">Auto: peel one-by-one</button>
+          <button class="act ghost" id="autoRandom">Auto: random</button>
+          <button class="act" id="ureset">Reset</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="scorebar">
+          <div><div class="stat">total score</div><div class="bignum" id="score">0</div></div>
+          <div style="margin-left:auto"><span class="target-pill">target C(8,2) = 28</span></div>
+        </div>
+        <div class="stacks stage" id="stacks"></div>
+        <span class="meter hold" id="umeter"><span class="dot"></span><span>pairs separated</span><span class="lbl" id="pairslbl">0 / 28</span></span>
+        <div class="splitlog" id="splitlog">No splits yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">odd inversion parity forever · every unstacking strategy ties at 28</div>
+</div>
+
+<script>
+"use strict";
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+
+/* ---------- tabs ---------- */
+const tabs = document.querySelectorAll(".tab");
+const panels = document.querySelectorAll(".panel");
+tabs.forEach(t => t.addEventListener("click", () => {
+  tabs.forEach(x => x.setAttribute("aria-selected", x === t));
+  panels.forEach(p => p.classList.toggle("active", p.id === t.dataset.tab));
+}));
+
+/* ================= 1. DOMINOES ================= */
+const N_DOM = 8;
+const domStage = document.getElementById("dominoes");
+const dmeter = document.getElementById("dmeter");
+const dnote = document.getElementById("dnote");
+function buildDominoes(){
+  domStage.innerHTML = "";
+  for(let i=0;i<N_DOM;i++){
+    const d = document.createElement("div");
+    d.className = "domino"; d.id = "dom"+i;
+    d.innerHTML = `<div class="piece"><span class="pn">P(${i})</span></div>`;
+    domStage.appendChild(d);
+  }
+  dmeter.className = "meter hold";
+  dmeter.querySelector(".lbl").textContent = "intact";
+}
+buildDominoes();
+let domBusy = false;
+async function fall(upTo){
+  for(let i=0;i<=upTo;i++){
+    document.getElementById("dom"+i).classList.add("fallen");
+    await wait(180);
+  }
+}
+document.getElementById("knock").addEventListener("click", async ()=>{
+  if(domBusy) return; domBusy = true;
+  buildDominoes();
+  dnote.textContent = "P(0) is true, and each P(k) ⟹ P(k+1) — so every domino falls.";
+  await fall(N_DOM-1);
+  domBusy = false;
+});
+document.getElementById("breakchain").addEventListener("click", async ()=>{
+  if(domBusy) return; domBusy = true;
+  buildDominoes();
+  dnote.innerHTML = "The link P(4) ⟹ P(5) is missing. Dominoes 5–7 never fall — one broken step breaks the whole proof.";
+  dmeter.className = "meter broken";
+  dmeter.querySelector("span:nth-child(2)").textContent = "chain";
+  dmeter.querySelector(".lbl").textContent = "broken at 4→5";
+  await fall(4);
+  for(let i=5;i<N_DOM;i++) document.getElementById("dom"+i).classList.add("stuck");
+  domBusy = false;
+});
+document.getElementById("dreset").addEventListener("click", ()=>{ if(!domBusy){ buildDominoes(); dnote.textContent="Press “Knock the base case” to start the chain."; }});
+
+/* ================= 2. PUZZLE ================= */
+const START = ['a','b','c','d','e','f','h','g',''];
+const GOAL  = ['a','b','c','d','e','f','g','h',''];
+let board = START.slice();
+let moveCount = 0;
+const gridEl = document.getElementById("grid");
+const flatEl = document.getElementById("flat");
+const invEl = document.getElementById("inv");
+const movesEl = document.getElementById("moves");
+const pmeter = document.getElementById("pmeter");
+const paritylbl = document.getElementById("paritylbl");
+const lastmoveEl = document.getElementById("lastmove");
+
+function inversions(b){
+  const t = b.filter(x=>x!=="");
+  let c = 0;
+  for(let i=0;i<t.length;i++)
+    for(let j=i+1;j<t.length;j++)
+      if(t[i] > t[j]) c++;
+  return c;
+}
+function neighborsOfBlank(b){
+  const k = b.indexOf("");
+  const r = Math.floor(k/3), c = k%3, out = [];
+  if(r>0) out.push(k-3);
+  if(r<2) out.push(k+3);
+  if(c>0) out.push(k-1);
+  if(c<2) out.push(k+1);
+  return out;
+}
+function renderPuzzle(){
+  const movable = new Set(neighborsOfBlank(board));
+  gridEl.innerHTML = "";
+  board.forEach((v,i)=>{
+    const t = document.createElement("div");
+    t.className = "tile" + (v==="" ? " blank" : "") + (movable.has(i) ? " movable":"");
+    t.textContent = v;
+    if(movable.has(i)) t.addEventListener("click", ()=>slide(i));
+    gridEl.appendChild(t);
+  });
+  const inv = inversions(board);
+  flatEl.innerHTML = board.filter(x=>x!=="").map(x=>`<span>${x}</span>`).join(" ");
+  invEl.textContent = inv;
+  movesEl.textContent = moveCount;
+  const odd = inv % 2 === 1;
+  paritylbl.textContent = odd ? "odd ✓" : "even ✗";
+  pmeter.className = "meter " + (odd ? "hold" : "broken"); // always hold in practice
+}
+function slide(i){
+  const k = board.indexOf("");
+  const before = inversions(board);
+  const diff = Math.abs(i-k);
+  const type = diff===1 ? "row" : "column";
+  [board[i], board[k]] = [board[k], board[i]];
+  moveCount++;
+  const after = inversions(board);
+  const delta = after - before;
+  renderPuzzle();
+  lastmoveEl.innerHTML = `Last move: <b>${type}</b> — inversions ${before} → ${after} (Δ ${delta>=0?"+":""}${delta}). Parity still <b>odd</b>.`;
+}
+function renderGoal(){
+  const g = document.getElementById("goalgrid");
+  g.innerHTML = "";
+  GOAL.forEach(v=>{
+    const t = document.createElement("div");
+    t.className = "tile" + (v===""?" blank":"");
+    t.textContent = v;
+    g.appendChild(t);
+  });
+}
+document.getElementById("preset").addEventListener("click", ()=>{ board=START.slice(); moveCount=0; renderPuzzle(); lastmoveEl.textContent="No moves yet."; });
+let scrambling=false;
+document.getElementById("scramble").addEventListener("click", async ()=>{
+  if(scrambling) return; scrambling=true;
+  for(let s=0;s<24;s++){
+    const opts = neighborsOfBlank(board);
+    slide(opts[Math.floor(Math.random()*opts.length)]);
+    await wait(70);
+  }
+  lastmoveEl.innerHTML = `Made 24 random legal moves. Inversions = <b>${inversions(board)}</b>. Parity is <b>still odd</b> — it never flipped.`;
+  scrambling=false;
+});
+renderPuzzle();
+renderGoal();
+
+/* ================= 3. ORDINARY VS STRONG ================= */
+const TARGET = 8;
+const numlineEl = document.getElementById("numline");
+const modeTitle = document.getElementById("modeTitle");
+const strNote = document.getElementById("strNote");
+const smeter = document.getElementById("smeter");
+const reachlbl = document.getElementById("reachlbl");
+let mode = "ordinary", splitShown = false;
+function renderNumline(){
+  numlineEl.innerHTML = "";
+  for(let i=0;i<=TARGET;i++){
+    const d = document.createElement("div");
+    d.className = "num";
+    d.textContent = i;
+    if(i===TARGET){ d.classList.add("target"); }
+    else if(mode==="strong"){ d.classList.add("assumed"); }
+    else if(i===TARGET-1){ d.classList.add("assumed"); }
+    if(splitShown && (i===3 || i===5)){
+      d.classList.add("need");
+      const reachable = mode==="strong";
+      if(!reachable) d.classList.add("miss");
+    }
+    numlineEl.appendChild(d);
+  }
+}
+function setMode(m){
+  mode = m;
+  document.getElementById("ordBtn").setAttribute("aria-pressed", m==="ordinary");
+  document.getElementById("strBtn").setAttribute("aria-pressed", m==="strong");
+  modeTitle.textContent = m==="ordinary" ? "Ordinary — one step back" : "Strong — entire history";
+  smeter.className = "meter hold";
+  reachlbl.textContent = m==="ordinary" ? "1 step" : "all of 0…n";
+  if(splitShown){
+    strNote.innerHTML = m==="strong"
+      ? `Splitting 8 into 3 + 5: strong lets you assume <span class="mono">P(3)</span> and <span class="mono">P(5)</span> — <span class="teal-t">both available ✓</span>.`
+      : `Splitting 8 into 3 + 5 needs <span class="mono">P(3)</span> and <span class="mono">P(5)</span>, but ordinary only gives you <span class="mono">P(7)</span> — <span class="red-t">can’t reach them ✗</span>.`;
+    if(m==="ordinary"){ smeter.className="meter broken"; reachlbl.textContent="too short for 3 + 5"; }
+  } else {
+    strNote.innerHTML = m==="ordinary"
+      ? `Proving <span class="mono">P(8)</span>: you may assume only <span class="mono">P(7)</span>.`
+      : `Proving <span class="mono">P(8)</span>: you may assume every case <span class="mono">P(0)…P(7)</span>.`;
+  }
+  renderNumline();
+}
+document.getElementById("ordBtn").addEventListener("click", ()=>setMode("ordinary"));
+document.getElementById("strBtn").addEventListener("click", ()=>setMode("strong"));
+document.getElementById("splitDemo").addEventListener("click", ()=>{ splitShown=true; setMode(mode); });
+setMode("ordinary");
+
+/* ================= 4. UNSTACKING ================= */
+const N_BLK = 8;
+let stacks = [N_BLK];
+let score = 0;
+let log = [];
+let autoBusy = false;
+const stacksEl = document.getElementById("stacks");
+const scoreEl = document.getElementById("score");
+const splitlogEl = document.getElementById("splitlog");
+const umeter = document.getElementById("umeter");
+const pairslbl = document.getElementById("pairslbl");
+
+function renderStacks(){
+  stacksEl.innerHTML = "";
+  stacks.forEach((s, si)=>{
+    const col = document.createElement("div");
+    col.className = "stack";
+    for(let i=0;i<s;i++){
+      const b = document.createElement("div");
+      b.className = "blk";
+      col.appendChild(b);
+      if(i < s-1 && s>1){
+        const g = document.createElement("div");
+        g.className = "gap";
+        const below = i+1, above = s-(i+1);
+        g.innerHTML = `<span class="tip">${below} × ${above} = ${below*above}</span>`;
+        g.addEventListener("click", ()=>{ if(!autoBusy) doSplit(si, below); });
+        col.appendChild(g);
+      }
+    }
+    const sz = document.createElement("div");
+    sz.className = "size"; sz.textContent = s;
+    col.appendChild(sz);
+    stacksEl.appendChild(col);
+  });
+  scoreEl.textContent = score;
+  const done = stacks.every(s=>s===1);
+  scoreEl.classList.toggle("done", done);
+  pairslbl.textContent = score + " / 28";
+  umeter.className = "meter hold";
+  if(done){
+    splitlogEl.innerHTML = log.join("  →  ") + `  =  <b style="color:var(--teal)">${score}</b>  · every strategy lands here: 8·7/2 = 28.`;
+  } else if(log.length){
+    splitlogEl.innerHTML = log.join("  →  ");
+  } else {
+    splitlogEl.textContent = "No splits yet.";
+  }
+}
+function doSplit(stackIndex, a){
+  const s = stacks[stackIndex];
+  const b = s - a;
+  if(a<1 || b<1) return;
+  score += a*b;
+  log.push(`${a}×${b}=${a*b}`);
+  stacks.splice(stackIndex, 1, a, b);
+  renderStacks();
+}
+function uReset(){ stacks=[N_BLK]; score=0; log=[]; renderStacks(); }
+document.getElementById("ureset").addEventListener("click", ()=>{ if(!autoBusy) uReset(); });
+
+async function autoPlay(planFn){
+  if(autoBusy) return; autoBusy=true;
+  uReset();
+  await wait(250);
+  // repeatedly split until all ones, using planFn to choose (stackIndex, a)
+  while(!stacks.every(s=>s===1)){
+    const choice = planFn();
+    if(!choice) break;
+    doSplit(choice[0], choice[1]);
+    await wait(420);
+  }
+  autoBusy=false;
+}
+// balanced: split the largest stack as evenly as possible
+document.getElementById("autoBalanced").addEventListener("click", ()=>autoPlay(()=>{
+  let idx=-1, best=1;
+  stacks.forEach((s,i)=>{ if(s>best){best=s;idx=i;} });
+  if(idx<0) return null;
+  return [idx, Math.floor(stacks[idx]/2)];
+}));
+// peel: always take 1 off the largest stack
+document.getElementById("autoPeel").addEventListener("click", ()=>autoPlay(()=>{
+  let idx=-1, best=1;
+  stacks.forEach((s,i)=>{ if(s>best){best=s;idx=i;} });
+  if(idx<0) return null;
+  return [idx, 1];
+}));
+// random: random splittable stack, random split point
+document.getElementById("autoRandom").addEventListener("click", ()=>autoPlay(()=>{
+  const cand = stacks.map((s,i)=>[i,s]).filter(x=>x[1]>1);
+  if(!cand.length) return null;
+  const [i,s] = cand[Math.floor(Math.random()*cand.length)];
+  return [i, 1+Math.floor(Math.random()*(s-1))];
+}));
+renderStacks();
+</script>
+</body>
+</html>
