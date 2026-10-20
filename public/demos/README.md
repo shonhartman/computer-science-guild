@@ -5,5 +5,6 @@ Static HTML served at `/demos/<file>` on [computer-science-guild.vercel.app](htt
 | File | Session | Presenter | Notion embed |
 |------|---------|-----------|--------------|
 | `double-sum-triangle.html` | Sums · double sums (2026-05-19) | Andrew Sever | `/embed` → `/demos/double-sum-triangle.html` |
+| `counting-rules-i.html` | Counting Rules I (MIT 6.042J L16) | Shaun Hartman | Link → `/demos/counting-rules-i.html` |
 
 Add new demos here (self-contained HTML). Vercel redeploys on merge to `main`.
