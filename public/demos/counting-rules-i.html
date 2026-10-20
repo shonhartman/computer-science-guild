@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Count the Easy Thing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+/* Layout: one screen at a time on ruled notebook paper. Big plain words on the left, a hands-on demo on the right. Tool tabs on top, page turner at the bottom. */
+:root {
+  --paper: #F7F9FD;
+  --ink: #1B2232;
+  --muted: #586379;
+  --rule: #D6E0EF;
+  --margin: #D2405A;
+  --margin-line: rgba(210, 64, 90, 0.28);
+  --blue: #2350C8;
+  --on-blue: #FFFFFF;
+  --pencil: #F2B42F;
+  --on-pencil: #1B2232;
+  --card: #FFFFFF;
+  --soft: #EEF3FB;
+  --shadow: rgba(27, 34, 50, 0.22);
+  --choc: #7A4A2A;
+  --lemon: #E8C33A;
+  --sugar: #E77FA8;
+  --glaze: #D98A2B;
+  --plain: #C9A97E;
+  --sq-a: #EDF2FA;
+  --sq-b: #C5D3EA;
+  --safe: rgba(35, 80, 200, 0.32);
+  --hit: rgba(210, 64, 90, 0.16);
+  --bill: #E5EEE3;
+  --bill-edge: #7E9A7A;
+  --good: #23855A;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", Verdana, "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111726; --ink: #E8EDF6; --muted: #9AA6BC; --rule: #24304A;
+    --margin: #F0718A; --margin-line: rgba(240, 113, 138, 0.30);
+    --blue: #86A6FF; --on-blue: #0E1424; --pencil: #F5C451; --on-pencil: #1B2232;
+    --card: #182033; --soft: #1E2840; --shadow: rgba(0, 0, 0, 0.5);
+    --choc: #B57A52; --lemon: #F0D35A; --sugar: #F09BBE; --glaze: #EDA552; --plain: #D8BE96;
+    --sq-a: #2A3550; --sq-b: #1A2338; --safe: rgba(134, 166, 255, 0.40); --hit: rgba(240, 113, 138, 0.20);
+    --bill: #1D2B24; --bill-edge: #5E7D63; --good: #5CC994;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111726; --ink: #E8EDF6; --muted: #9AA6BC; --rule: #24304A;
+  --margin: #F0718A; --margin-line: rgba(240, 113, 138, 0.30);
+  --blue: #86A6FF; --on-blue: #0E1424; --pencil: #F5C451; --on-pencil: #1B2232;
+  --card: #182033; --soft: #1E2840; --shadow: rgba(0, 0, 0, 0.5);
+  --choc: #B57A52; --lemon: #F0D35A; --sugar: #F09BBE; --glaze: #EDA552; --plain: #D8BE96;
+  --sq-a: #2A3550; --sq-b: #1A2338; --safe: rgba(134, 166, 255, 0.40); --hit: rgba(240, 113, 138, 0.20);
+  --bill: #1D2B24; --bill-edge: #5E7D63; --good: #5CC994;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 35px, var(--rule) 35px 36px);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1.5;
+}
+@media (min-width: 1000px) {
+  body {
+    background-image:
+      linear-gradient(to right, transparent 46px, var(--margin-line) 46px 48px, transparent 48px),
+      repeating-linear-gradient(to bottom, transparent 0 35px, var(--rule) 35px 36px);
+  }
+}
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 1000px) { .app { padding-left: max(72px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); } }
+
+.top { display: flex; align-items: center; gap: 20px; padding-block: 14px 10px; flex-wrap: wrap; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 1.1rem; white-space: nowrap; }
+.brand small { font-family: var(--mono); font-weight: 500; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-left: 8px; }
+.tabs-wrap { flex: 1; min-width: 0; overflow-x: auto; position: relative; }
+.tabs { display: flex; gap: 6px; padding-block: 4px; }
+.tab {
+  font: 700 0.85rem var(--body); white-space: nowrap; cursor: pointer;
+  border: 1px solid var(--rule); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 6px 12px;
+}
+.tab[aria-current="step"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.stage { flex: 1; min-height: 0; overflow: auto; }
+.slide {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 48px; align-items: start; padding-block: 28px 40px;
+}
+.slide.solo { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+@media (max-width: 900px) { .slide { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 16px 28px; } }
+
+.eyebrow { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--margin); font-weight: 700; }
+h1 {
+  font-family: var(--display); font-weight: 800;
+  font-size: clamp(2.1rem, 4.4vw, 3.6rem); line-height: 1.04; letter-spacing: -0.02em;
+  text-wrap: balance; margin: 0.25em 0 0.45em;
+}
+.words p { font-size: 1.25rem; max-width: 32em; margin: 0 0 0.75em; }
+.words p.small, .tie { font-size: 1.02rem; color: var(--muted); }
+mark { background: var(--pencil); color: var(--on-pencil); padding: 0 0.22em; border-radius: 4px; }
+.official {
+  margin-top: 18px; padding-top: 14px; border-top: 2px dashed var(--rule);
+  font-size: 1rem; color: var(--muted);
+}
+.official b { color: var(--ink); }
+
+.stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.demo {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
+  padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  box-shadow: 0 16px 34px -24px var(--shadow);
+}
+.demo h2 { font-family: var(--display); font-weight: 800; font-size: 1.2rem; margin: 0; text-wrap: balance; }
+.demo p { margin: 0; }
+.say { font-size: 1.02rem; min-height: 1.5em; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn {
+  font: 700 0.95rem var(--body); cursor: pointer; border-radius: 10px;
+  border: 1.5px solid var(--ink); background: var(--card); color: var(--ink); padding: 8px 14px;
+}
+.btn.primary { background: var(--blue); border-color: var(--blue); color: var(--on-blue); }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.btn:disabled, .mini:disabled { opacity: 0.4; cursor: default; }
+.tab:focus-visible, .btn:focus-visible, .mini:focus-visible, .sq:focus-visible, input:focus-visible { outline: 3px solid var(--pencil); outline-offset: 2px; }
+.math { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 1rem; line-height: 1.7; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stats div { background: var(--soft); border-radius: 10px; padding: 10px 12px; }
+.stats b { display: block; font-family: var(--mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 0.9rem; color: var(--muted); }
+.label { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* doughnuts */
+.kinds { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kind { background: var(--soft); border-radius: 10px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.kname { font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.kname i { width: 12px; height: 12px; border-radius: 50%; border: 4px solid; display: inline-block; }
+.step { display: flex; align-items: center; gap: 8px; }
+.step b { font-family: var(--mono); min-width: 1.4em; text-align: center; font-size: 1.1rem; }
+.mini { width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--ink); background: var(--card); color: var(--ink); font: 700 1.05rem var(--body); cursor: pointer; line-height: 1; }
+.tape { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-height: 52px; padding: 12px; background: var(--soft); border-radius: 10px; }
+.o { width: 24px; height: 24px; border-radius: 50%; border: 6px solid; background: var(--card); }
+.wall { width: 5px; height: 34px; background: var(--margin); border-radius: 2px; margin: 0 5px; }
+.bits { font-family: var(--mono); font-size: 1.15rem; letter-spacing: 0.14em; overflow-wrap: anywhere; padding: 4px 12px; }
+.bits .one { color: var(--margin); font-weight: 700; }
+
+/* pigeons */
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 18px; }
+.sliders label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 0.95rem; }
+.sliders output { font-family: var(--mono); }
+input[type="range"] { width: 100%; accent-color: var(--blue); }
+.holes { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px; }
+.hole {
+  min-height: 66px; border: 2px solid var(--rule); border-radius: 12px 12px 4px 4px; background: var(--soft);
+  display: flex; flex-wrap: wrap; align-content: flex-end; justify-content: center; gap: 1px; padding: 18px 3px 4px; position: relative;
+}
+.hole.full { border-color: var(--margin); background: var(--hit); }
+.hole .n { position: absolute; top: 2px; left: 7px; font: 500 0.7rem var(--mono); color: var(--muted); }
+.bird { width: 22px; height: 22px; color: var(--ink); }
+.bar { display: flex; height: 28px; border-radius: 8px; overflow: hidden; background: var(--soft); }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.92rem; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* handfuls */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 700 1.05rem var(--mono); padding: 5px 12px; border-radius: 999px; border: 1.5px solid var(--rule); background: var(--card); font-variant-numeric: tabular-nums; }
+.chip.a { background: var(--blue); border-color: var(--blue); color: var(--on-blue); }
+.chip.b { background: var(--pencil); border-color: var(--pencil); color: var(--on-pencil); }
+.hand { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.hand .tag { font: 700 0.75rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 6px; }
+.tag.a { background: var(--blue); color: var(--on-blue); }
+.tag.b { background: var(--pencil); color: var(--on-pencil); }
+
+/* rooks */
+.board {
+  display: grid; grid-template-columns: repeat(var(--n, 8), 1fr);
+  width: min(100%, 400px); max-width: 100%; aspect-ratio: 1;
+  border: 2px solid var(--ink); border-radius: 6px; overflow: hidden;
+}
+.sq { border: 0; padding: 0; margin: 0; background: var(--sq-a); color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 0; }
+.sq.dark { background: var(--sq-b); }
+.sq.safe { box-shadow: inset 0 0 0 999px var(--safe); }
+.sq.hit { box-shadow: inset 0 0 0 999px var(--hit); }
+.rook { font-size: var(--rk, 1.3rem); line-height: 1; display: inline-flex; align-items: flex-end; }
+.rook sub { font: 700 0.6rem var(--mono); margin-left: 1px; color: var(--margin); }
+.board-wrap { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+.board-wrap .math { flex: 1; min-width: 200px; }
+
+/* outfits and team */
+.outfits { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 10px; }
+.fit { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; background: var(--soft); border-radius: 10px; }
+.shirt { width: 34px; height: 20px; border-radius: 8px 8px 3px 3px; }
+.pants { width: 24px; height: 24px; border-radius: 2px 2px 4px 4px; }
+.steppers { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+.steppers .step span { font-weight: 700; font-size: 0.95rem; min-width: 4.2em; }
+.people { display: flex; flex-wrap: wrap; gap: 6px; }
+.person { font-size: 0.92rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--soft); border: 1.5px solid transparent; }
+.person.picked { background: var(--pencil); color: var(--on-pencil); }
+.slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.slot { border: 1.5px dashed var(--rule); border-radius: 10px; padding: 8px 10px; }
+.slot b { display: block; font-size: 1.05rem; }
+.slot span { font-size: 0.85rem; color: var(--muted); }
+
+/* dollar bill */
+.bill {
+  background: var(--bill); border: 2px solid var(--bill-edge); border-radius: 8px; padding: 16px 18px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  outline: 1px solid var(--bill-edge); outline-offset: -8px;
+}
+.bill .one { font-family: var(--display); font-weight: 800; font-size: 1.6rem; color: var(--bill-edge); letter-spacing: 0.06em; }
+.serial { font: 700 clamp(1.3rem, 3.4vw, 1.9rem) var(--mono); letter-spacing: 0.08em; display: flex; gap: 2px; }
+.serial span { padding: 0 3px; border-radius: 4px; }
+.serial .rep { background: var(--pencil); color: var(--on-pencil); }
+.pill { font: 700 0.75rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 6px; margin-right: 6px; }
+.pill.bad { background: var(--margin); color: var(--card); }
+.pill.good { background: var(--good); color: var(--card); }
+
+/* piles */
+.toggle { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; cursor: pointer; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--blue); }
+.groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.group { background: var(--soft); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.group b { font-size: 1rem; }
+.dots { display: flex; flex-wrap: wrap; gap: 6px; }
+.kid { width: 24px; height: 24px; border-radius: 50%; background: var(--blue); }
+.kid.bus { background: var(--pencil); }
+.kid.both { background: linear-gradient(90deg, var(--blue) 50%, var(--pencil) 50%); outline: 2px solid var(--margin); outline-offset: 1px; }
+
+/* passwords */
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.fields label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; font-weight: 700; color: var(--muted); }
+.fields input { font: 700 1.05rem var(--mono); padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--rule); background: var(--paper); color: var(--ink); width: 100%; min-width: 0; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 700 0.72rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+td.num { font-family: var(--mono); text-align: right; }
+th.num { text-align: right; }
+td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+.total { font-family: var(--display); font-weight: 800; font-size: 1.35rem; }
+
+/* wrap-up */
+.tools { display: flex; flex-direction: column; border-top: 2px solid var(--ink); margin-top: 10px; }
+.tools div { display: grid; grid-template-columns: minmax(0, 15em) minmax(0, 1fr); gap: 6px 24px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 1.2rem; }
+.tools b { font-family: var(--display); font-weight: 800; }
+@media (max-width: 600px) { .tools div { grid-template-columns: minmax(0, 1fr); } }
+.next { margin-top: 24px; font-size: 1.1rem; color: var(--muted); }
+
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px 14px; border-top: 1px solid var(--rule); background: var(--paper); }
+.pager .where { font: 500 0.85rem var(--mono); color: var(--muted); text-align: center; }
+.pager .hint { display: block; font-size: 0.72rem; }
+@media (max-width: 560px) { .pager .hint { display: none; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .slide:not([hidden]) { animation: rise 220ms ease-out; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="pigeon" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M4.6 14.2 1 11.2l1.1 5.2z"/>
+    <ellipse fill="currentColor" cx="11" cy="15" rx="7.2" ry="5"/>
+    <circle fill="currentColor" cx="17" cy="9" r="3.3"/>
+    <path fill="currentColor" d="m20 8.4 3.2 1-3.2.9z"/>
+    <circle cx="17.9" cy="8.4" r="0.8" style="fill: var(--card)"/>
+  </symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">Counting Rules I <small>MIT 6.042J · L16</small></div>
+    <nav class="tabs-wrap" aria-label="Sections"><div class="tabs" id="tabs"></div></nav>
+  </header>
+
+  <main class="stage" id="stage">
+
+    <!-- Big idea -->
+    <section class="slide" id="start" data-tab="Big idea">
+      <div class="words">
+        <div class="eyebrow">The one big idea</div>
+        <h1>Count the easy thing.</h1>
+        <p>Some things are too many to count one by one.</p>
+        <p>So find something easy to count that has <mark>the same number</mark>. Then count the easy thing.</p>
+        <p class="small">Every tool today is a different way to play this one game.</p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <h2>A box of 12 doughnuts. The shop has 5 kinds.</h2>
+          <div class="kinds" id="kinds"></div>
+          <p class="say" id="boxTotal" aria-live="polite"></p>
+          <div>
+            <div class="label">Draw each doughnut as a circle. Put a wall between kinds.</div>
+          </div>
+          <div class="tape" id="tape" aria-label="The box drawn as circles and walls"></div>
+          <div>
+            <div class="label">Now write each circle as 0 and each wall as 1</div>
+            <div class="bits" id="bits"></div>
+          </div>
+          <p>Every box makes one row. Every row makes one box. There are <mark>1,820</mark> rows, so there are 1,820 boxes. Nobody had to list them.</p>
+          <div class="row"><button class="btn primary" type="button" id="shuffleBox">Pack a random box</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pigeons -->
+    <section class="slide" id="pigeons" data-tab="Pigeons" hidden>
+      <div class="words">
+        <div class="eyebrow">Tool 3 · Too many pigeons</div>
+        <h1>More pigeons than holes means someone shares.</h1>
+        <p>10 holes. 11 pigeons. Ten pigeons can each get their own hole. The eleventh has to share.</p>
+        <p>We know some hole has two. We don't know which one. We never looked. We just counted.</p>
+        <p class="official">Official name: <b>the pigeonhole principle</b></p>
+        <p class="tie">For engineers: more keys than hash buckets means a collision. You know it before you look at a single key.</p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <div class="sliders">
+            <label for="holesIn">Holes: <output id="holesOut">10</output><input type="range" id="holesIn" min="3" max="12" value="10"></label>
+            <label for="pigeonsIn">Pigeons: <output id="pigeonsOut">11</output><input type="range" id="pigeonsIn" min="1" max="30" value="11"></label>
+          </div>
+          <div class="row">
+            <button class="btn" type="button" id="spread" aria-pressed="true">Spread them out</button>
+            <button class="btn" type="button" id="fly" aria-pressed="false">Let them fly anywhere</button>
+          </div>
+          <div class="holes" id="holes"></div>
+          <p class="say" id="pigeonSay" aria-live="polite"></p>
+        </div>
+        <div class="demo">
+          <h2>Boston hair</h2>
+          <p>About 500,000 people in Boston have hair. Nobody has more than about 200,000 hairs.</p>
+          <p>Make one bucket for every hair count. Put 2 people in every bucket.</p>
+          <div class="bar" role="img" aria-label="400,000 people fit two per bucket, 100,000 are left over">
+            <span style="width:80%; background: var(--blue)"></span>
+            <span style="width:20%; background: var(--margin)"></span>
+          </div>
+          <div class="legend">
+            <span><i style="background: var(--blue)"></i>200,000 buckets × 2 = 400,000 people</span>
+            <span><i style="background: var(--margin)"></i>100,000 people left over</span>
+          </div>
+          <p>The leftovers have to go somewhere. So some bucket gets a third person. <mark>Three people in Boston have exactly the same number of hairs.</mark></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Handfuls -->
+    <section class="slide" id="handfuls" data-tab="Handfuls" hidden>
+      <div class="words">
+        <div class="eyebrow">Tool 3 · Again</div>
+        <h1>Two handfuls always tie.</h1>
+        <p>Pick any 10 two-digit numbers. Grab a handful and add them up.</p>
+        <p>Count the handfuls. Each number is in or out. That's 2 choices, ten times: <b>1,024 handfuls</b>.</p>
+        <p>Count the totals. They go from 0 up to 10 × 99 = 990. That's <b>991 totals</b>.</p>
+        <p>More handfuls than totals. Two handfuls have to land on the same total.</p>
+        <p class="official">Official name: <b>a non-constructive proof</b>. We proved it's there without pointing at it.</p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <div class="stats">
+            <div><b>1,024</b><span>different handfuls</span></div>
+            <div><b>991</b><span>possible totals</span></div>
+          </div>
+          <div class="label">Your 10 numbers</div>
+          <div class="chips" id="nums"></div>
+          <div class="hand" id="handA"></div>
+          <div class="hand" id="handB"></div>
+          <p class="say tie" id="handSay" aria-live="polite"></p>
+          <div class="row"><button class="btn primary" type="button" id="newNums">Pick 10 new numbers</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rooks -->
+    <section class="slide" id="rooks" data-tab="Rooks" hidden>
+      <div class="words">
+        <div class="eyebrow">Tool 4 · Count double, then divide</div>
+        <h1>Count it twice. Then cut it in half.</h1>
+        <p>Two rooks that look exactly the same. They can't share a row or a column.</p>
+        <p>Rook A can go anywhere. Rook B has to stay out of A's lines.</p>
+        <p>"A here, B there" and "B here, A there" make the same picture. We counted every picture twice, so we divide by 2.</p>
+        <p class="official">Official name: <b>the division rule</b></p>
+        <p class="tie">Watch out: it only works if every picture gets counted the same number of times.</p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <div class="row" id="sizes">
+            <button class="btn" type="button" data-n="2" aria-pressed="false">2 × 2</button>
+            <button class="btn" type="button" data-n="3" aria-pressed="false">3 × 3</button>
+            <button class="btn" type="button" data-n="4" aria-pressed="false">4 × 4</button>
+            <button class="btn" type="button" data-n="8" aria-pressed="true">8 × 8</button>
+          </div>
+          <div class="board-wrap">
+            <div class="board" id="board"></div>
+            <div class="math" id="rookMath"></div>
+          </div>
+          <p class="say" id="rookSay" aria-live="polite"></p>
+          <div class="row">
+            <button class="btn primary" type="button" id="swap">Swap A and B</button>
+            <button class="btn" type="button" id="clearBoard">Clear the board</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multiply -->
+    <section class="slide" id="multiply" data-tab="Multiply" hidden>
+      <div class="words">
+        <div class="eyebrow">Tool 5 · Choices in a row</div>
+        <h1>Choices in a row multiply.</h1>
+        <p>2 shirts and 3 pairs of pants make 6 outfits. Every shirt goes with every pair of pants.</p>
+        <p>Choices can shrink as you go. That's fine. To fill 3 jobs from 10 people, you get 10 choices, then 9, then 8.</p>
+        <p>What matters is that each step always has the same number of choices, no matter who got picked before.</p>
+        <p class="official">Official name: <b>the product rule</b></p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <h2>Outfits</h2>
+          <div class="steppers">
+            <div class="step"><span>Shirts</span><button class="mini" type="button" id="shirtLess" aria-label="One less shirt">−</button><b id="shirtN">2</b><button class="mini" type="button" id="shirtMore" aria-label="One more shirt">+</button></div>
+            <div class="step"><span>Pants</span><button class="mini" type="button" id="pantsLess" aria-label="One less pair of pants">−</button><b id="pantsN">3</b><button class="mini" type="button" id="pantsMore" aria-label="One more pair of pants">+</button></div>
+          </div>
+          <div class="outfits" id="outfits"></div>
+          <p class="math" id="outfitMath"></p>
+        </div>
+        <div class="demo">
+          <h2>Pick a leader, a secretary and a helper from 10 people</h2>
+          <div class="people" id="people"></div>
+          <div class="slots" id="slots"></div>
+          <p class="math">10 × 9 × 8 = <mark>720</mark> different teams</p>
+          <div class="row"><button class="btn primary" type="button" id="pickTeam">Pick a team</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dollar bills -->
+    <section class="slide" id="dollars" data-tab="Dollar bills" hidden>
+      <div class="words">
+        <div class="eyebrow">Tool 5 · Again</div>
+        <h1>Almost every dollar bill is broken.</h1>
+        <p>Every bill has an 8-digit serial number. Call a bill broken if any digit shows up twice. Sounds rare. It isn't.</p>
+        <p class="math">All serial numbers:<br>10 × 10 × 10 × 10 × 10 × 10 × 10 × 10 = 100,000,000</p>
+        <p class="math">No repeats:<br>10 × 9 × 8 × 7 × 6 × 5 × 4 × 3 = 1,814,400</p>
+        <p>That's under 2 bills in every 100. <mark>The other 98 are broken.</mark></p>
+        <p class="tie">For engineers: this is why the birthday problem surprises people, and why random IDs collide sooner than you'd guess.</p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <div class="bill"><span class="one">ONE</span><span class="serial" id="serial"></span></div>
+          <p class="say" id="billVerdict" aria-live="polite"></p>
+          <div class="row">
+            <button class="btn primary" type="button" id="printOne">Print a bill</button>
+            <button class="btn" type="button" id="printMany">Print 1,000 bills</button>
+          </div>
+          <div class="bar" role="img" aria-label="Share of printed bills that are broken"><span id="tallyFill" style="width:0; background: var(--margin)"></span></div>
+          <p class="say" id="tally"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Piles -->
+    <section class="slide" id="piles" data-tab="Piles" hidden>
+      <div class="words">
+        <div class="eyebrow">Tool 6 · Separate piles</div>
+        <h1>Separate piles add.</h1>
+        <p>12 kids walk to school. 8 kids ride the bus. Nobody does both. That's 12 + 8 = 20 kids.</p>
+        <p>If some kids do both, adding counts them twice. Fixing that is next time's lesson.</p>
+        <p class="official">Official name: <b>the sum rule</b></p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <label class="toggle" for="both"><input type="checkbox" id="both"> Some kids do both</label>
+          <div class="groups">
+            <div class="group"><b id="walkLabel">Walk: 12</b><div class="dots" id="walkDots"></div></div>
+            <div class="group"><b id="busLabel">Bus: 8</b><div class="dots" id="busDots"></div></div>
+          </div>
+          <p class="say" id="pileSay" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Passwords -->
+    <section class="slide" id="passwords" data-tab="Passwords" hidden>
+      <div class="words">
+        <div class="eyebrow">Tools 5 and 6 together</div>
+        <h1>How many passwords?</h1>
+        <p>6 to 8 characters long. The first one is a letter: 52 choices. The rest are a letter or a digit: 62 choices.</p>
+        <p><b>Step 1.</b> Split into piles by length. No password is two lengths, so the piles don't overlap.</p>
+        <p><b>Step 2.</b> Multiply inside each pile.</p>
+        <p><b>Step 3.</b> Add the piles.</p>
+        <p class="tie">Real problems mix tools. This one used two. Change the rules on the right to try your own.</p>
+      </div>
+      <div class="stack">
+        <div class="demo">
+          <div class="fields">
+            <label for="pwFirst">First character choices<input type="number" id="pwFirst" min="1" max="200" value="52"></label>
+            <label for="pwRest">Other character choices<input type="number" id="pwRest" min="1" max="200" value="62"></label>
+            <label for="pwMin">Shortest length<input type="number" id="pwMin" min="1" max="12" value="6"></label>
+            <label for="pwMax">Longest length<input type="number" id="pwMax" min="1" max="12" value="8"></label>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Pile</th><th>Multiply</th><th class="num">How many</th><th class="num">Share</th></tr></thead>
+              <tbody id="pwRows"></tbody>
+            </table>
+          </div>
+          <div class="bar" id="pwBar" role="img" aria-label="How big each pile is compared to the total"></div>
+          <p class="total" id="pwTotal"></p>
+          <p class="say" id="pwSay"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wrap-up -->
+    <section class="slide solo" id="wrap" data-tab="Wrap-up" hidden>
+      <div class="words">
+        <div class="eyebrow">The whole lesson</div>
+        <h1>Every tool is the same move.</h1>
+        <p>When something is hard to count, find something easy to count that has the same number. Then count the easy thing.</p>
+        <div class="tools">
+          <div><b>Matching</b><span>Count a stand-in that matches up one to one.</span></div>
+          <div><b>Too many pigeons</b><span>Compare two counts to prove something has to collide.</span></div>
+          <div><b>Count double, then divide</b><span>Count it the easy way, then fix the overcount.</span></div>
+          <div><b>Multiply</b><span>For choices made one after another.</span></div>
+          <div><b>Add</b><span>For piles that don't overlap.</span></div>
+        </div>
+        <p class="next">Next time: piles that do overlap. And the doughnut puzzle gets its formula.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pager">
+    <button class="btn" type="button" id="prev">Back</button>
+    <div class="where"><span id="count">1 / 9</span><span class="hint">Use the arrow keys to move</span></div>
+    <button class="btn primary" type="button" id="next">Next</button>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const fmt = n => n.toLocaleString('en-US');
+  const rnd = n => Math.floor(Math.random() * n);
+
+  /* ---------- navigation ---------- */
+  const slides = $$('.slide');
+  const tabs = $('#tabs');
+  slides.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab'; b.textContent = s.dataset.tab;
+    b.addEventListener('click', () => go(i));
+    tabs.appendChild(b);
+  });
+  let cur = 0;
+  function go(i) {
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, j) => { s.hidden = j !== cur; });
+    $$('.tab', tabs).forEach((t, j) => t.setAttribute('aria-current', j === cur ? 'step' : 'false'));
+    $('#count').textContent = (cur + 1) + ' / ' + slides.length;
+    $('#prev').disabled = cur === 0;
+    $('#next').disabled = cur === slides.length - 1;
+    try { history.replaceState(null, '', '#' + slides[cur].id); } catch (e) {}
+    $('#stage').scrollTop = 0;
+    const t = $$('.tab', tabs)[cur];
+    if (t && t.parentElement) {
+      const wrap = t.closest('.tabs-wrap');
+      const left = t.offsetLeft - wrap.clientWidth / 2 + t.clientWidth / 2;
+      wrap.scrollLeft = Math.max(0, left);
+    }
+  }
+  $('#prev').addEventListener('click', () => go(cur - 1));
+  $('#next').addEventListener('click', () => go(cur + 1));
+  document.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('input, textarea, select')) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { go(cur + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { go(cur - 1); e.preventDefault(); }
+  });
+
+  /* ---------- doughnuts ---------- */
+  const KINDS = [['Chocolate', '--choc'], ['Lemon', '--lemon'], ['Sugar', '--sugar'], ['Glazed', '--glaze'], ['Plain', '--plain']];
+  const box = [2, 0, 6, 2, 2];
+  function drawBox(focusKey) {
+    const total = box.reduce((a, b) => a + b, 0);
+    $('#kinds').innerHTML = KINDS.map((k, i) =>
+      '<div class="kind"><span class="kname"><i style="border-color: var(' + k[1] + ')"></i>' + k[0] + '</span>' +
+      '<div class="step"><button type="button" class="mini" data-k="' + i + '" data-d="-1" aria-label="One less ' + k[0] + '"' + (box[i] === 0 ? ' disabled' : '') + '>−</button>' +
+      '<b>' + box[i] + '</b>' +
+      '<button type="button" class="mini" data-k="' + i + '" data-d="1" aria-label="One more ' + k[0] + '"' + (total >= 12 ? ' disabled' : '') + '>+</button></div></div>'
+    ).join('');
+    $('#boxTotal').textContent = total === 12 ? '12 of 12. The box is full. Take one out to swap kinds.' : total + ' of 12 in the box. Add ' + (12 - total) + ' more.';
+    let tape = '', bits = '';
+    KINDS.forEach((k, i) => {
+      for (let j = 0; j < box[i]; j++) { tape += '<span class="o" style="border-color: var(' + k[1] + ')"></span>'; bits += '<span>0</span>'; }
+      if (i < KINDS.length - 1) { tape += '<span class="wall"></span>'; bits += '<span class="one">1</span>'; }
+    });
+    $('#tape').innerHTML = tape;
+    $('#bits').innerHTML = bits;
+    if (focusKey) {
+      const b = $('#kinds button[data-k="' + focusKey[0] + '"][data-d="' + focusKey[1] + '"]');
+      if (b && !b.disabled) b.focus();
+    }
+  }
+  $('#kinds').addEventListener('click', e => {
+    const b = e.target.closest('button[data-k]');
+    if (!b) return;
+    const i = +b.dataset.k, d = +b.dataset.d;
+    const total = box.reduce((a, c) => a + c, 0);
+    if (d < 0 && box[i] > 0) box[i]--;
+    if (d > 0 && total < 12) box[i]++;
+    drawBox([i, d]);
+  });
+  $('#shuffleBox').addEventListener('click', () => {
+    const pos = new Set();
+    while (pos.size < 4) pos.add(rnd(16));
+    const walls = Array.from(pos).sort((a, b) => a - b);
+    let prev = -1;
+    walls.forEach((w, i) => { box[i] = w - prev - 1; prev = w; });
+    box[4] = 15 - prev;
+    drawBox();
+  });
+  drawBox();
+
+  /* ---------- pigeons ---------- */
+  let pigeonMode = 'even';
+  function drawPigeons() {
+    const h = +$('#holesIn').value, p = +$('#pigeonsIn').value;
+    $('#holesOut').textContent = h;
+    $('#pigeonsOut').textContent = p;
+    const counts = new Array(h).fill(0);
+    for (let i = 0; i < p; i++) counts[pigeonMode === 'even' ? i % h : rnd(h)]++;
+    const max = Math.max.apply(null, counts);
+    const must = Math.ceil(p / h);
+    const bird = '<svg class="bird" viewBox="0 0 24 24" aria-hidden="true"><use href="#pigeon"/></svg>';
+    $('#holes').innerHTML = counts.map((c, i) =>
+      '<div class="hole' + (c === max && c > 1 ? ' full' : '') + '" aria-label="Hole ' + (i + 1) + ': ' + c + ' pigeons"><span class="n">' + (i + 1) + '</span>' + bird.repeat(c) + '</div>'
+    ).join('');
+    $('#pigeonSay').innerHTML = p > h
+      ? p + ' pigeons, ' + h + ' holes. The fullest hole has <mark>' + max + '</mark>. However they land, some hole always gets at least <b>' + must + '</b>.'
+      : p + ' pigeons, ' + h + ' holes. Everyone can get a hole of their own. Add more pigeons than holes.';
+    $('#spread').setAttribute('aria-pressed', String(pigeonMode === 'even'));
+    $('#fly').setAttribute('aria-pressed', String(pigeonMode !== 'even'));
+  }
+  $('#holesIn').addEventListener('input', drawPigeons);
+  $('#pigeonsIn').addEventListener('input', drawPigeons);
+  $('#spread').addEventListener('click', () => { pigeonMode = 'even'; drawPigeons(); });
+  $('#fly').addEventListener('click', () => { pigeonMode = 'random'; drawPigeons(); });
+  drawPigeons();
+
+  /* ---------- handfuls ---------- */
+  let nums = [12, 17, 24, 31, 25, 60, 92, 48, 73, 91];
+  function findMatch(ns) {
+    const seen = new Map();
+    for (let m = 0; m < 1024; m++) {
+      let s = 0;
+      for (let i = 0; i < 10; i++) if ((m >> i) & 1) s += ns[i];
+      if (seen.has(s)) {
+        let a = seen.get(s), b = m;
+        const common = a & b;
+        return { a: a & ~common, b: b & ~common, checked: m + 1 };
+      }
+      seen.set(s, m);
+    }
+    return null;
+  }
+  function drawHands() {
+    const r = findMatch(nums);
+    const inA = i => (r.a >> i) & 1, inB = i => (r.b >> i) & 1;
+    $('#nums').innerHTML = nums.map((n, i) => '<span class="chip' + (inA(i) ? ' a' : inB(i) ? ' b' : '') + '">' + n + '</span>').join('');
+    const line = (mask, cls, name) => {
+      const pick = nums.filter((n, i) => (mask >> i) & 1);
+      const sum = pick.reduce((x, y) => x + y, 0);
+      return '<span class="tag ' + cls + '">' + name + '</span><span class="math">' + pick.join(' + ') + ' = <b>' + sum + '</b></span>';
+    };
+    $('#handA').innerHTML = line(r.a, 'a', 'Handful A');
+    $('#handB').innerHTML = line(r.b, 'b', 'Handful B');
+    $('#handSay').textContent = 'Same total. The computer found this pair after checking ' + fmt(r.checked) + ' handfuls. The counting told us it had to be there.';
+  }
+  $('#newNums').addEventListener('click', () => {
+    const s = new Set();
+    while (s.size < 10) s.add(10 + rnd(90));
+    nums = Array.from(s);
+    drawHands();
+  });
+  drawHands();
+
+  /* ---------- rooks ---------- */
+  let rn = 8, A = [1, 2], B = [5, 6];
+  const RK = { 2: '3.4rem', 3: '2.6rem', 4: '2rem', 8: '1.3rem' };
+  function drawBoard(msg) {
+    const bd = $('#board');
+    bd.style.setProperty('--n', rn);
+    bd.style.setProperty('--rk', RK[rn]);
+    let html = '';
+    for (let r = 0; r < rn; r++) for (let c = 0; c < rn; c++) {
+      const isA = A && A[0] === r && A[1] === c;
+      const isB = B && B[0] === r && B[1] === c;
+      let cls = 'sq' + ((r + c) % 2 ? ' dark' : '');
+      if (A && !B && !isA) cls += (r === A[0] || c === A[1]) ? ' hit' : ' safe';
+      const label = isA ? '<span class="rook">♜<sub>A</sub></span>' : isB ? '<span class="rook">♜<sub>B</sub></span>' : '';
+      html += '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c + '" aria-label="Row ' + (r + 1) + ', column ' + (c + 1) + (isA ? ', rook A' : '') + (isB ? ', rook B' : '') + '">' + label + '</button>';
+    }
+    bd.innerHTML = html;
+    const sq = rn * rn, safe = (rn - 1) * (rn - 1);
+    $('#rookMath').innerHTML =
+      'Rook A: <b>' + fmt(sq) + '</b> squares<br>' +
+      'Rook B: <b>' + fmt(safe) + '</b> safe squares<br>' +
+      fmt(sq) + ' × ' + fmt(safe) + ' = ' + fmt(sq * safe) + '<br>' +
+      'Each picture counted twice:<br>' + fmt(sq * safe) + ' ÷ 2 = <mark>' + fmt(sq * safe / 2) + '</mark> pictures';
+    $('#rookSay').textContent = msg || (!A ? 'Tap a square to place rook A.'
+      : !B ? 'Rook A is down. The blue squares are safe for rook B. There are ' + safe + ' of them.'
+      : 'Both rooks are down. Press swap and watch the picture.');
+    $$('#sizes button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === rn)));
+  }
+  $('#board').addEventListener('click', e => {
+    const b = e.target.closest('.sq');
+    if (!b) return;
+    const r = +b.dataset.r, c = +b.dataset.c;
+    let msg;
+    if (!A) A = [r, c];
+    else if (!B) {
+      if (r === A[0] && c === A[1]) A = null;
+      else if (r !== A[0] && c !== A[1]) B = [r, c];
+      else msg = "That square is in rook A's row or column. Pick a blue square.";
+    } else { A = [r, c]; B = null; }
+    drawBoard(msg);
+  });
+  $('#swap').addEventListener('click', () => {
+    if (!A || !B) { drawBoard('Place both rooks first.'); return; }
+    const t = A; A = B; B = t;
+    drawBoard('Swapped. The picture looks exactly the same. That is why we divide by 2.');
+  });
+  $('#clearBoard').addEventListener('click', () => { A = null; B = null; drawBoard(); });
+  $('#sizes').addEventListener('click', e => {
+    const b = e.target.closest('button[data-n]');
+    if (!b) return;
+    rn = +b.dataset.n;
+    if (rn === 8) { A = [1, 2]; B = [5, 6]; } else { A = [0, 0]; B = [1, 1]; }
+    drawBoard();
+  });
+  drawBoard();
+
+  /* ---------- outfits ---------- */
+  const SHIRTS = [['Blue', '--blue'], ['Red', '--margin'], ['Yellow', '--pencil'], ['Brown', '--choc']];
+  const PANTS = [['Black', '--ink'], ['Gray', '--muted'], ['Tan', '--plain'], ['Pink', '--sugar']];
+  let ns = 2, np = 3;
+  function drawOutfits() {
+    let html = '';
+    for (let s = 0; s < ns; s++) for (let p = 0; p < np; p++) {
+      html += '<div class="fit" title="' + SHIRTS[s][0] + ' shirt, ' + PANTS[p][0] + ' pants"><span class="shirt" style="background: var(' + SHIRTS[s][1] + ')"></span><span class="pants" style="background: var(' + PANTS[p][1] + ')"></span></div>';
+    }
+    $('#outfits').innerHTML = html;
+    $('#shirtN').textContent = ns;
+    $('#pantsN').textContent = np;
+    $('#outfitMath').innerHTML = ns + ' shirt' + (ns > 1 ? 's' : '') + ' × ' + np + ' pants = <mark>' + (ns * np) + '</mark> outfits';
+    $('#shirtLess').disabled = ns <= 1; $('#shirtMore').disabled = ns >= 4;
+    $('#pantsLess').disabled = np <= 1; $('#pantsMore').disabled = np >= 4;
+  }
+  $('#shirtLess').addEventListener('click', () => { if (ns > 1) ns--; drawOutfits(); });
+  $('#shirtMore').addEventListener('click', () => { if (ns < 4) ns++; drawOutfits(); });
+  $('#pantsLess').addEventListener('click', () => { if (np > 1) np--; drawOutfits(); });
+  $('#pantsMore').addEventListener('click', () => { if (np < 4) np++; drawOutfits(); });
+  drawOutfits();
+
+  /* ---------- team ---------- */
+  const PEOPLE = ['Ana', 'Ben', 'Cy', 'Dee', 'Eli', 'Fay', 'Gus', 'Hal', 'Ivy', 'Jo'];
+  function pickTeam() {
+    const pool = PEOPLE.slice();
+    const team = [];
+    for (let i = 0; i < 3; i++) team.push(pool.splice(rnd(pool.length), 1)[0]);
+    $('#people').innerHTML = PEOPLE.map(p => '<span class="person' + (team.indexOf(p) >= 0 ? ' picked' : '') + '">' + p + '</span>').join('');
+    const jobs = [['Leader', 10, 'anyone'], ['Secretary', 9, 'anyone but the leader'], ['Helper', 8, 'anyone left']];
+    $('#slots').innerHTML = jobs.map((j, i) => '<div class="slot"><span>' + j[0] + ' · ' + j[1] + ' choices</span><b>' + team[i] + '</b><span>' + j[2] + '</span></div>').join('');
+  }
+  $('#pickTeam').addEventListener('click', pickTeam);
+  pickTeam();
+
+  /* ---------- dollar bills ---------- */
+  let printed = 0, broken = 0;
+  const serial = () => { let s = ''; for (let i = 0; i < 8; i++) s += rnd(10); return s; };
+  const countDigits = s => { const c = {}; for (const d of s) c[d] = (c[d] || 0) + 1; return c; };
+  function record(s) { printed++; if (Object.values(countDigits(s)).some(v => v > 1)) broken++; }
+  function showBill(s) {
+    const c = countDigits(s);
+    $('#serial').innerHTML = Array.from(s).map(d => '<span class="' + (c[d] > 1 ? 'rep' : '') + '">' + d + '</span>').join('');
+    const reps = Object.keys(c).filter(d => c[d] > 1);
+    $('#billVerdict').innerHTML = reps.length
+      ? '<span class="pill bad">Broken</span>' + reps.map(d => d + ' shows up ' + (c[d] === 2 ? 'twice' : c[d] + ' times')).join(', ') + '.'
+      : '<span class="pill good">Not broken</span>All 8 digits are different. That is rare.';
+  }
+  function drawTally() {
+    const pct = printed ? broken / printed * 100 : 0;
+    $('#tally').innerHTML = 'Bills printed: <b>' + fmt(printed) + '</b> · Broken: <b>' + fmt(broken) + '</b> · <mark>' + pct.toFixed(1) + '%</mark> broken';
+    $('#tallyFill').style.width = pct + '%';
+  }
+  $('#printOne').addEventListener('click', () => { const s = serial(); record(s); showBill(s); drawTally(); });
+  $('#printMany').addEventListener('click', () => { let s; for (let i = 0; i < 1000; i++) { s = serial(); record(s); } showBill(s); drawTally(); });
+  (function () { let s; for (let i = 0; i < 1000; i++) { s = serial(); record(s); } showBill(s); drawTally(); })();
+
+  /* ---------- piles ---------- */
+  function drawPiles() {
+    const both = $('#both').checked;
+    const kids = (n, cls) => '<span class="kid ' + cls + '"></span>'.repeat(n);
+    if (!both) {
+      $('#walkDots').innerHTML = kids(12, '');
+      $('#busDots').innerHTML = kids(8, 'bus');
+      $('#pileSay').innerHTML = '12 + 8 = <mark>20 kids</mark>. Nobody is in both piles, so adding works.';
+    } else {
+      $('#walkDots').innerHTML = kids(9, '') + kids(3, 'both');
+      $('#busDots').innerHTML = kids(5, 'bus') + kids(3, 'both');
+      $('#pileSay').innerHTML = 'Adding says 12 + 8 = 20. But there are only <mark>17 kids</mark>. The 3 striped kids got counted twice.';
+    }
+  }
+  $('#both').addEventListener('change', drawPiles);
+  drawPiles();
+
+  /* ---------- passwords ---------- */
+  const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  const sup = n => String(n).split('').map(d => SUP[+d]).join('');
+  const SEG = ['--blue', '--pencil', '--margin', '--choc', '--sugar', '--good'];
+  function words(b) {
+    const units = [[10n ** 15n, 'quadrillion'], [10n ** 12n, 'trillion'], [10n ** 9n, 'billion'], [10n ** 6n, 'million']];
+    for (const [u, name] of units) {
+      if (b >= u) {
+        const x = Number(b * 10n / u) / 10;
+        return 'about ' + x.toLocaleString('en-US', { maximumFractionDigits: 1 }) + ' ' + name;
+      }
+    }
+    return b.toLocaleString('en-US');
+  }
+  function readInt(id, lo, hi) {
+    const v = parseInt($(id).value, 10);
+    if (isNaN(v)) return null;
+    return Math.max(lo, Math.min(hi, v));
+  }
+  function drawPw() {
+    const F = readInt('#pwFirst', 1, 200), R = readInt('#pwRest', 1, 200);
+    let lo = readInt('#pwMin', 1, 12), hi = readInt('#pwMax', 1, 12);
+    if (F === null || R === null || lo === null || hi === null) return;
+    if (hi < lo) { const t = lo; lo = hi; hi = t; }
+    const piles = [];
+    for (let L = lo; L <= hi; L++) {
+      const count = BigInt(F) * BigInt(R) ** BigInt(L - 1);
+      const formula = L === 1 ? String(F) : F + ' × ' + R + (L - 1 > 1 ? sup(L - 1) : '');
+      piles.push({ L, count, formula });
+    }
+    const total = piles.reduce((a, p) => a + p.count, 0n);
+    const share = c => Number(c * 1000000n / total) / 10000;
+    $('#pwRows').innerHTML = piles.map((p, i) => {
+      const s = share(p.count);
+      return '<tr><td><span class="sw" style="background: var(' + SEG[i % SEG.length] + ')"></span>' + p.L + ' long</td><td class="math">' + p.formula + '</td><td class="num">' + p.count.toLocaleString('en-US') + '</td><td class="num">' + (s < 0.01 ? 'under 0.01%' : s.toFixed(2) + '%') + '</td></tr>';
+    }).join('');
+    $('#pwBar').innerHTML = piles.map((p, i) => '<span style="width:' + share(p.count) + '%; min-width:3px; background: var(' + SEG[i % SEG.length] + ')"></span>').join('');
+    $('#pwTotal').textContent = total.toLocaleString('en-US') + ' passwords. That is ' + words(total) + '.';
+    if (piles.length > 1) {
+      const last = piles[piles.length - 1];
+      $('#pwSay').innerHTML = 'The ' + last.L + '-character pile is <mark>' + share(last.count).toFixed(1) + '%</mark> of everything. One more character beats everything else you could change.';
+    } else {
+      $('#pwSay').textContent = 'Only one pile, so there is nothing to add. Allow more than one length to see the add rule.';
+    }
+  }
+  ['#pwFirst', '#pwRest', '#pwMin', '#pwMax'].forEach(id => $(id).addEventListener('input', drawPw));
+  drawPw();
+
+  /* ---------- start ---------- */
+  const h = location.hash.slice(1);
+  const idx = slides.findIndex(s => s.id === h);
+  go(idx >= 0 ? idx : 0);
+})();
+</script>
+</body>
+</html>
