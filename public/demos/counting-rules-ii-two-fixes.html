@@ -1,0 +1,429 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Two Fixes: Subtract and Divide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: single scratch-doc column, one card per teaching beat, answers hidden behind reveal buttons */
+:root {
+  --bg: #f6f7f9;
+  --fg: #1d2432;
+  --muted: #5b6472;
+  --card: #ffffff;
+  --line: #dde1e8;
+  --accent: #4f46e5;
+  --accent-soft: #eef0fe;
+  --trap: #b45309;
+  --trap-soft: #fdf3e4;
+  --ok: #15803d;
+  --display: "Space Grotesk", "Avenir Next", sans-serif;
+  --body: "Inter", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151c; --fg: #e8eaf0; --muted: #9aa3b2; --card: #1a1f2a;
+    --line: #2c3340; --accent: #8f92f5; --accent-soft: #23263e;
+    --trap: #f0a94b; --trap-soft: #2e2415; --ok: #4ade80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151c; --fg: #e8eaf0; --muted: #9aa3b2; --card: #1a1f2a;
+  --line: #2c3340; --accent: #8f92f5; --accent-soft: #23263e;
+  --trap: #f0a94b; --trap-soft: #2e2415; --ok: #4ade80;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+main { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 2rem; line-height: 1.15; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+.eyebrow {
+  font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent);
+}
+header .how {
+  margin-top: 10px; color: var(--muted); max-width: 60ch;
+}
+.topbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
+}
+.section-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.chip {
+  font-size: .75rem; font-weight: 600; letter-spacing: .04em;
+  background: var(--accent-soft); color: var(--accent);
+  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.guess {
+  display: flex; gap: 10px; align-items: baseline;
+  border-left: 3px solid var(--accent); padding-left: 12px;
+}
+.guess .who {
+  font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--accent); white-space: nowrap;
+}
+.reveal-wrap { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+button.reveal {
+  font-family: var(--body); font-size: .85rem; font-weight: 600;
+  color: var(--accent); background: transparent;
+  border: 1px solid var(--accent); border-radius: 8px;
+  padding: 7px 16px; cursor: pointer;
+}
+button.reveal:hover { background: var(--accent-soft); }
+button.reveal:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.answer {
+  background: var(--accent-soft); border-radius: 8px; padding: 12px 14px;
+  width: 100%; box-sizing: border-box;
+}
+.answer .num { font-family: var(--display); font-weight: 700; font-size: 1.15rem; }
+.trap {
+  background: var(--trap-soft); border: 1px solid transparent; border-left: 3px solid var(--trap);
+  border-radius: 8px; padding: 12px 14px;
+}
+.trap .label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--trap);
+}
+.tiles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tile {
+  font-family: var(--display); font-weight: 700; font-size: 1rem;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg);
+  min-width: 34px; padding: 6px 8px; text-align: center;
+}
+.tile.glued { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.mathline {
+  font-variant-numeric: tabular-nums; font-weight: 500;
+  overflow-x: auto; white-space: nowrap; padding-bottom: 2px;
+}
+.donut-row {
+  font-family: var(--display); font-size: 1.2rem; letter-spacing: .12em;
+  overflow-x: auto; white-space: nowrap; padding-bottom: 2px;
+}
+.donut-row .bar { color: var(--accent); font-weight: 700; }
+.legend { font-size: .85rem; color: var(--muted); }
+.pairs { display: flex; flex-wrap: wrap; gap: 8px 20px; font-variant-numeric: tabular-nums; }
+.pairs span { white-space: nowrap; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+figure { margin: 0; }
+svg text { font-family: var(--body); font-size: 13px; fill: var(--fg); }
+svg .venn { fill: var(--accent); fill-opacity: .14; stroke: var(--accent); stroke-width: 1.5; }
+svg .vlabel { font-weight: 600; }
+footer { color: var(--muted); font-size: .9rem; display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 480px) {
+  h1 { font-size: 1.6rem; }
+  .card { padding: 16px; }
+}
+</style>
+
+<main>
+<header>
+  <div class="topbar">
+    <p class="eyebrow">Counting Rules II · Half 1 · 0:03–0:28 · Robert drives</p>
+    <button class="reveal" id="hide-all" type="button">Hide all answers</button>
+  </div>
+  <h1>Two Fixes: Subtract and Divide</h1>
+  <p class="how">Rule of the hour: Shaun says a number out loud — and how he got it — <strong>before</strong> any answer is revealed. Wrong guesses are the good part. This whole session is about counts that look right and are not.</p>
+</header>
+
+<!-- ============ FIX ONE ============ -->
+<section class="card">
+  <div class="section-head">
+    <h2>Fix one — things overlap, so subtract</h2>
+    <span class="chip">~13 min</span>
+  </div>
+  <p>When groups overlap, adding their sizes counts the shared part more than once. Add the groups, take away every two-way overlap, add back every three-way overlap.</p>
+
+  <h3>Warm-up: pizza and tacos</h3>
+  <figure>
+    <svg viewBox="0 0 340 190" width="340" style="max-width:100%" role="img" aria-label="Two overlapping circles: pizza 5, tacos 4, both 2">
+      <circle class="venn" cx="130" cy="95" r="72"/>
+      <circle class="venn" cx="212" cy="95" r="72"/>
+      <text class="vlabel" x="88" y="90" text-anchor="middle">Pizza</text>
+      <text class="vlabel" x="88" y="108" text-anchor="middle">5</text>
+      <text class="vlabel" x="255" y="90" text-anchor="middle">Tacos</text>
+      <text class="vlabel" x="255" y="108" text-anchor="middle">4</text>
+      <text class="vlabel" x="171" y="90" text-anchor="middle">both</text>
+      <text class="vlabel" x="171" y="108" text-anchor="middle">2</text>
+    </svg>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>How many people are there in total?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p><span class="num">7</span>, not 9. The 2 both-lovers got counted twice in 5 + 4. Take them out once: 5 + 4 − 2 = 7. Regions: 3 pizza-only + 2 both + 2 tacos-only.</p>
+    </div>
+  </div>
+
+  <h3>Three circles: where does the middle go?</h3>
+  <figure>
+    <svg viewBox="0 0 340 210" width="340" style="max-width:100%" role="img" aria-label="Three overlapping circles, middle region darkest">
+      <circle class="venn" cx="140" cy="82" r="62"/>
+      <circle class="venn" cx="202" cy="82" r="62"/>
+      <circle class="venn" cx="171" cy="134" r="62"/>
+      <text class="vlabel" x="171" y="104" text-anchor="middle">?</text>
+    </svg>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>Add all three circles, then subtract all three pairwise overlaps. How many times is the middle region now counted?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p><span class="num">Zero.</span> It was added 3 times (once per circle) and subtracted 3 times (once per pair). It vanished — so add it back once. That is the whole pattern: <strong>add singles, subtract pairs, add back triples.</strong></p>
+    </div>
+  </div>
+
+  <h3>The real problem: digits 0–9 in a row</h3>
+  <p>Line up the digits 0 through 9, each used once. How many lineups have <strong>42</strong>, <strong>04</strong>, or <strong>60</strong> sitting side by side (in that order)?</p>
+
+  <p class="small"><strong>Step 1 — glue "60" into one tile.</strong> Now the row is 9 tiles:</p>
+  <div class="tiles">
+    <span class="tile glued">60</span><span class="tile">1</span><span class="tile">2</span><span class="tile">3</span><span class="tile">4</span><span class="tile">5</span><span class="tile">7</span><span class="tile">8</span><span class="tile">9</span>
+  </div>
+  <div class="guess"><span class="who">Shaun guesses</span><p>How many lineups of 9 tiles?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p><span class="num">9! = 362,880</span> — nine choices for the first spot, eight for the next, and so on. Same count for gluing "42", same for "04".</p>
+    </div>
+  </div>
+
+  <p class="small"><strong>Step 2 — two at once.</strong> Gluing 42 and 60 together leaves 8 tiles, so 8! lineups.</p>
+  <div class="guess"><span class="who">Shaun guesses</span><p>What about 60 and 04 together?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p>They share the 0 — so they fuse into <strong>one</strong> tile, <span class="tile glued" style="display:inline-block">604</span>. Still 8 tiles, still <span class="num">8! = 40,320</span>. (Same for 42 and 04: they share the 4 and fuse into "042". All three pairs give 8!.)</p>
+    </div>
+  </div>
+
+  <p class="small"><strong>Step 3 — all three at once:</strong> one tile <span class="tile glued" style="display:inline-block">6042</span>, so 7 tiles → 7! = 5,040.</p>
+
+  <p class="small"><strong>Step 4 — assemble with the fix:</strong></p>
+  <p class="mathline">3 · 9! &nbsp;−&nbsp; 3 · 8! &nbsp;+&nbsp; 7! &nbsp;=&nbsp; 1,088,640 − 120,960 + 5,040 &nbsp;=&nbsp; <strong>972,720</strong></p>
+
+  <div class="trap">
+    <p class="label">Trap to name</p>
+    <p>Stopping after the subtraction. With three groups, the middle got taken out too many times — if you forget the “+ 7!”, you are undercounting.</p>
+  </div>
+</section>
+
+<!-- ============ FIX ONE: EXTRA ROUNDS ============ -->
+<section class="card">
+  <div class="section-head">
+    <h2>Fix one — extra rounds</h2>
+    <span class="chip">bonus game</span>
+  </div>
+  <p class="small muted">More reps for the guessing game. Two rounds with two groups, two with three, and one grand finale with four.</p>
+
+  <h3>Round 1 (two groups): the sports class</h3>
+  <p>A class of 30 kids. 18 play football, 15 play basketball, and every kid plays at least one of the two.</p>
+  <figure>
+    <svg viewBox="0 0 340 190" width="340" style="max-width:100%" role="img" aria-label="Two overlapping circles: football 18, basketball 15, overlap unknown">
+      <circle class="venn" cx="130" cy="95" r="72"/>
+      <circle class="venn" cx="212" cy="95" r="72"/>
+      <text class="vlabel" x="88" y="90" text-anchor="middle">Football</text>
+      <text class="vlabel" x="88" y="108" text-anchor="middle">18</text>
+      <text class="vlabel" x="255" y="90" text-anchor="middle">Basketball</text>
+      <text class="vlabel" x="255" y="108" text-anchor="middle">15</text>
+      <text class="vlabel" x="171" y="100" text-anchor="middle">?</text>
+    </svg>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>How many kids play both?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p><span class="num">3.</span> Same formula, run backwards. 18 + 15 = 33 counts the both-players twice, but there are only 30 kids — so the double-counted part is 33 − 30 = 3. The overlap is whatever the naive sum overshoots by.</p>
+    </div>
+  </div>
+
+  <h3>Round 2 (two groups): numbers 1–20</h3>
+  <p>How many numbers from 1 to 20 are divisible by 2 or by 3?</p>
+  <figure>
+    <svg viewBox="0 0 340 190" width="340" style="max-width:100%" role="img" aria-label="Two overlapping circles: divisible by 2 is 10 numbers, by 3 is 6, overlap divisible by 6">
+      <circle class="venn" cx="130" cy="95" r="72"/>
+      <circle class="venn" cx="212" cy="95" r="72"/>
+      <text class="vlabel" x="88" y="90" text-anchor="middle">÷2</text>
+      <text class="vlabel" x="88" y="108" text-anchor="middle">10</text>
+      <text class="vlabel" x="255" y="90" text-anchor="middle">÷3</text>
+      <text class="vlabel" x="255" y="108" text-anchor="middle">6</text>
+      <text class="vlabel" x="171" y="90" text-anchor="middle">÷6</text>
+      <text class="vlabel" x="171" y="108" text-anchor="middle">?</text>
+    </svg>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>Divisible by 2: 10 numbers. Divisible by 3: 6 numbers. So… 16?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p><span class="num">13</span>, not 16. The numbers divisible by <strong>both</strong> — that's divisible by 6: the numbers 6, 12, 18 — got counted twice. 10 + 6 − 3 = 13. (Check by hand: 2, 3, 4, 6, 8, 9, 10, 12, 14, 15, 16, 18, 20.)</p>
+    </div>
+  </div>
+
+  <h3>Round 3 (three groups): the ice cream survey</h3>
+  <p>25 kids asked which flavors they like. Chocolate: 12. Vanilla: 10. Strawberry: 8. Chocolate + vanilla: 5. Chocolate + strawberry: 4. Vanilla + strawberry: 3. All three: 2.</p>
+  <figure>
+    <svg viewBox="0 0 340 235" width="340" style="max-width:100%" role="img" aria-label="Three overlapping circles: chocolate 12, vanilla 10, strawberry 8, all three 2">
+      <circle class="venn" cx="140" cy="87" r="62"/>
+      <circle class="venn" cx="202" cy="87" r="62"/>
+      <circle class="venn" cx="171" cy="139" r="62"/>
+      <text class="vlabel" x="108" y="58" text-anchor="middle">Choc</text>
+      <text class="vlabel" x="108" y="76" text-anchor="middle">12</text>
+      <text class="vlabel" x="236" y="58" text-anchor="middle">Van</text>
+      <text class="vlabel" x="236" y="76" text-anchor="middle">10</text>
+      <text class="vlabel" x="171" y="172" text-anchor="middle">Straw</text>
+      <text class="vlabel" x="171" y="190" text-anchor="middle">8</text>
+      <text class="vlabel" x="171" y="106" text-anchor="middle">2</text>
+    </svg>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>How many kids like at least one flavor — and how many like none?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p>Add singles, subtract pairs, add back the triple: (12 + 10 + 8) − (5 + 4 + 3) + 2 = 30 − 12 + 2 = <span class="num">20</span> like at least one, so <span class="num">5</span> like none. The all-three kids were added 3 times, removed 3 times, then rescued by the +2.</p>
+    </div>
+  </div>
+
+  <h3>Round 4 (three groups): numbers 1–30</h3>
+  <p>How many numbers from 1 to 30 are divisible by 2, 3, or 5?</p>
+  <figure>
+    <svg viewBox="0 0 340 235" width="340" style="max-width:100%" role="img" aria-label="Three overlapping circles: divisible by 2 is 15, by 3 is 10, by 5 is 6, center divisible by 30">
+      <circle class="venn" cx="140" cy="87" r="62"/>
+      <circle class="venn" cx="202" cy="87" r="62"/>
+      <circle class="venn" cx="171" cy="139" r="62"/>
+      <text class="vlabel" x="108" y="58" text-anchor="middle">÷2</text>
+      <text class="vlabel" x="108" y="76" text-anchor="middle">15</text>
+      <text class="vlabel" x="236" y="58" text-anchor="middle">÷3</text>
+      <text class="vlabel" x="236" y="76" text-anchor="middle">10</text>
+      <text class="vlabel" x="171" y="172" text-anchor="middle">÷5</text>
+      <text class="vlabel" x="171" y="190" text-anchor="middle">6</text>
+      <text class="vlabel" x="171" y="100" text-anchor="middle">÷30</text>
+      <text class="vlabel" x="171" y="116" text-anchor="middle">?</text>
+    </svg>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>By 2: 15. By 3: 10. By 5: 6. Build the rest of the formula out loud.</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p>Pairs are the shared multiples: by 6: 5, by 10: 3, by 15: 2. Triple is by 30: 1.</p>
+      <p class="mathline">(15 + 10 + 6) − (5 + 3 + 2) + 1 = 31 − 10 + 1 = <strong>22</strong></p>
+      <p>Cross-check: the survivors are 1, 7, 11, 13, 17, 19, 23, 29 — exactly 8 of them, and 30 − 8 = 22. Counted two ways, same number.</p>
+    </div>
+  </div>
+
+  <h3>Finale (four groups): numbers 1–100</h3>
+  <p>How many numbers from 1 to 100 are divisible by 2, 3, 5, or 7?</p>
+  <figure>
+    <svg viewBox="0 0 360 250" width="360" style="max-width:100%" role="img" aria-label="Four overlapping circles labeled divisible by 2, 3, 5 and 7 — schematic only">
+      <circle class="venn" cx="140" cy="95" r="68"/>
+      <circle class="venn" cx="220" cy="95" r="68"/>
+      <circle class="venn" cx="140" cy="155" r="68"/>
+      <circle class="venn" cx="220" cy="155" r="68"/>
+      <text class="vlabel" x="98" y="52" text-anchor="middle">÷2 · 50</text>
+      <text class="vlabel" x="262" y="52" text-anchor="middle">÷3 · 33</text>
+      <text class="vlabel" x="98" y="206" text-anchor="middle">÷5 · 20</text>
+      <text class="vlabel" x="262" y="206" text-anchor="middle">÷7 · 14</text>
+    </svg>
+    <figcaption class="legend">Schematic only — a fun fact for the room: four circles physically <em>cannot</em> draw all the overlap combinations four groups have. The picture gives up here. The formula doesn't.</figcaption>
+  </figure>
+  <div class="guess"><span class="who">Shaun guesses</span><p>First: with four groups, what does the pattern of plus and minus look like?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p>The signs keep alternating: <strong>add singles, subtract pairs, add triples, subtract quadruples.</strong></p>
+      <p class="mathline">singles: 50 + 33 + 20 + 14 = 117</p>
+      <p class="mathline">pairs (6, 10, 14, 15, 21, 35): 16 + 10 + 7 + 6 + 4 + 2 = 45</p>
+      <p class="mathline">triples (30, 42, 70, 105): 3 + 2 + 1 + 0 = 6</p>
+      <p class="mathline">quadruple (210): 0 &nbsp;(210 &gt; 100 — a term can be zero, the formula doesn't mind)</p>
+      <p class="mathline">117 − 45 + 6 − 0 = <strong>78</strong></p>
+      <p><strong>Why alternating works</strong> — follow one number that sits in all four groups. Singles add it 4 times. Pairs subtract it 6 times (that's how many pairs you can form from 4 groups). Triples add it 4 times. The quadruple subtracts it once. 4 − 6 + 4 − 1 = <strong>1</strong>. Counted exactly once, like everything else. Each +/− layer repairs the layer before it, one step deeper into the overlaps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FIX TWO ============ -->
+<section class="card">
+  <div class="section-head">
+    <h2>Fix two — orders repeat, so divide</h2>
+    <span class="chip">~12 min</span>
+  </div>
+  <p>To count arrangements when some pieces are identical, count as if every piece were different, then divide by the ways to shuffle each set of twins.</p>
+
+  <h3>Start tiny: A, B, B</h3>
+  <p class="small">If the two B's were different colors, there would be 6 lineups:</p>
+  <div class="pairs">
+    <span>A <strong style="color:var(--accent)">B</strong> <strong style="color:var(--ok)">B</strong></span>
+    <span>A <strong style="color:var(--ok)">B</strong> <strong style="color:var(--accent)">B</strong></span>
+    <span><strong style="color:var(--accent)">B</strong> A <strong style="color:var(--ok)">B</strong></span>
+    <span><strong style="color:var(--ok)">B</strong> A <strong style="color:var(--accent)">B</strong></span>
+    <span><strong style="color:var(--accent)">B</strong> <strong style="color:var(--ok)">B</strong> A</span>
+    <span><strong style="color:var(--ok)">B</strong> <strong style="color:var(--accent)">B</strong> A</span>
+  </div>
+  <div class="guess"><span class="who">Shaun guesses</span><p>Strip the colors. How many lineups can you actually tell apart?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p><span class="num">3</span>: ABB, BAB, BBA. Each real lineup appears <strong>twice</strong> in the colored list — once per way to shuffle the two B's. 6 ÷ 2 = 3. That division is the whole fix.</p>
+    </div>
+  </div>
+
+  <h3>The doughnut payoff</h3>
+  <p>Left hanging last session: order 12 doughnuts from 5 kinds. Any order is a row of 12 doughnuts and 4 dividers between kinds — 16 symbols:</p>
+  <p class="donut-row">●●●<span class="bar">|</span>●●●●<span class="bar">|</span>●<span class="bar">|</span>●●<span class="bar">|</span>●●</p>
+  <p class="legend">= 3 glazed, 4 chocolate, 1 jelly, 2 sprinkle, 2 plain. Every order is exactly one such row; every row is exactly one order.</p>
+  <div class="guess"><span class="who">Shaun guesses</span><p>So: how many ways to place the 4 dividers among 16 positions?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p>Place them one by one: 16 · 15 · 14 · 13 = 43,680. But the dividers are identical twins — every set of 4 positions got counted 4! = 24 times. 43,680 ÷ 24 = <span class="num">1,820</span>.</p>
+    </div>
+  </div>
+
+  <h3>Name it: "16 choose 4"</h3>
+  <p>Picking 4 spots out of 16 where order does not matter is written C(16, 4). Same move everywhere. Picking 2 reviewers from a team of 6:</p>
+  <div class="guess"><span class="who">Shaun guesses</span><p>6 · 5 = 30 ordered picks. The real answer is 15. Why not 30?</p></div>
+  <div class="reveal-wrap">
+    <button class="reveal" type="button">Reveal</button>
+    <div class="answer" hidden>
+      <p>"Ana then Ben" and "Ben then Ana" are the <strong>same pair of reviewers</strong>. Every pair got counted twice. 30 ÷ 2 = <span class="num">15</span>.</p>
+    </div>
+  </div>
+
+  <h3 class="muted">If time: where "3 choose 2" hides</h3>
+  <p class="small muted">(a + b)(a + b)(a + b) multiplies out to 8 pieces. Three of them — aab, aba, baa — collapse into the same term a²b. That 3 is "3 choose 2": which 2 of the 3 brackets donated an a.</p>
+
+  <div class="trap">
+    <p class="label">Trap to name</p>
+    <p>Counting "Ana then Ben" and "Ben then Ana" as two picks. Ordered counting is fine — as long as you remember to divide by how many orders describe the same thing.</p>
+  </div>
+</section>
+
+<footer>
+  <p><strong>0:28 — hand over to Shaun.</strong> Half 2: poker hands, the two-pairs near miss, counting it twice. You guess now — guess honestly, the burn is the point.</p>
+  <p>Short on time (40-min version): keep pizza/tacos, skip the three-way step of the digits problem, keep the doughnut payoff.</p>
+</footer>
+</main>
+
+<script>
+document.querySelectorAll('button.reveal:not(#hide-all)').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.parentElement.querySelector('.answer');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    btn.textContent = panel.hidden ? 'Reveal' : 'Hide';
+  });
+});
+document.getElementById('hide-all').addEventListener('click', () => {
+  document.querySelectorAll('.answer').forEach(p => { p.hidden = true; });
+  document.querySelectorAll('button.reveal:not(#hide-all)').forEach(b => { b.textContent = 'Reveal'; });
+});
+</script>
+
+</body></html>

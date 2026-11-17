@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Hand Counted Twice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one 16:9 card table that plays like a video. Headline top left, cards in the middle, the recipe under them, a caption along the bottom, player controls under the table. Single theme on purpose: the table is always felt. */
+:root {
+  --room: #061614;
+  --felt: #12463C;
+  --felt-deep: #0A2B25;
+  --rail: rgba(233, 185, 73, 0.30);
+  --chalk: #EEF5F0;
+  --muted: #A3C4B8;
+  --card: #FBF6EA;
+  --ink: #16201D;
+  --red: #CC2F3C;
+  --gold: #E9B949;
+  --on-gold: #1B1605;
+  --well: rgba(3, 18, 15, 0.42);
+  --line: rgba(238, 245, 240, 0.16);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", Verdana, "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--room); color: var(--chalk); font-family: var(--body); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.player { height: 100%; display: flex; flex-direction: column; background: var(--room); }
+.viewport { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 16px 16px 8px; }
+.frame { position: relative; overflow: hidden; border-radius: 14px; background: var(--felt-deep); box-shadow: 0 30px 60px -30px #000; cursor: pointer; }
+.stage {
+  position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0;
+  background: radial-gradient(120% 90% at 50% 38%, var(--felt) 0%, var(--felt-deep) 78%);
+}
+.stage::after { content: ""; position: absolute; inset: 14px; border: 2px solid var(--rail); border-radius: 22px; pointer-events: none; }
+
+.scene { position: absolute; inset: 0; padding: 50px 64px 120px; display: flex; flex-direction: column; gap: 22px; opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility .45s; }
+.scene.active { opacity: 1; visibility: visible; }
+.eyebrow { font: 700 17px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+h1, h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; line-height: 1.04; margin: 0; text-wrap: balance; }
+h1 { font-size: 88px; max-width: 760px; }
+h2 { font-size: 58px; max-width: 1000px; }
+.sub { font-size: 26px; color: var(--muted); max-width: 640px; margin: 0; line-height: 1.35; }
+.head { display: flex; flex-direction: column; gap: 10px; }
+
+[data-step] { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
+[data-step].on { opacity: 1; transform: none; }
+
+/* playing cards */
+.hand { display: flex; gap: 16px; }
+.pc {
+  position: relative; flex: none; width: 108px; height: 150px; border-radius: 11px; background: var(--card); color: var(--ink);
+  box-shadow: 0 14px 26px -12px rgba(0,0,0,.75), inset 0 0 0 1px rgba(22,32,29,.12);
+  font-family: var(--display); font-weight: 800;
+}
+.pc.red { color: var(--red); }
+.pc .corner { position: absolute; left: 10px; top: 7px; display: flex; flex-direction: column; align-items: center; line-height: 1; font-size: 30px; }
+.pc .corner .s { font-size: 22px; margin-top: 2px; }
+.pc .corner.b { left: auto; top: auto; right: 10px; bottom: 7px; transform: rotate(180deg); }
+.pc .pip { position: absolute; inset: 0; display: grid; place-items: center; font-size: 58px; }
+.s, .pip, .suit { font-family: "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif; font-variant-emoji: text; font-weight: 400; }
+.pc[data-step] { transform: translateY(46px) rotate(-9deg); transition-delay: calc(var(--i, 0) * 80ms); }
+.pc[data-step].on { transform: none; }
+.pc.hl.on { transform: translateY(-14px); box-shadow: 0 0 0 4px var(--gold), 0 20px 30px -12px rgba(0,0,0,.8); transition-delay: 0s; }
+.pc.sm { width: 84px; height: 118px; }
+.pc.sm .corner { font-size: 24px; left: 8px; top: 6px; } .pc.sm .corner .s { font-size: 18px; } .pc.sm .corner.b { right: 8px; bottom: 6px; left: auto; top: auto; } .pc.sm .pip { font-size: 44px; }
+.pc.mini { width: 50px; height: 60px; border-radius: 7px; display: grid; place-items: center; font-size: 19px; box-shadow: 0 6px 10px -6px rgba(0,0,0,.7); }
+.pc.mini { transition: transform .35s ease, box-shadow .35s ease; }
+.pc.mini .suit { font-size: 17px; margin-left: 1px; }
+.pc.mini.hl.on { transform: translateY(-6px) scale(1.12); box-shadow: 0 0 0 3px var(--gold), 0 10px 14px -6px rgba(0,0,0,.8); z-index: 2; }
+.fan { position: absolute; right: 150px; bottom: 150px; width: 108px; height: 150px; }
+.fan .pc { position: absolute; left: 0; top: 0; transform-origin: 50% 190%; transform: rotate(calc((var(--i) - 2) * 13deg)); }
+
+/* recipe */
+.recipe { display: flex; align-items: stretch; gap: 12px; }
+.slot { background: var(--well); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px 10px; min-width: 150px; max-width: 232px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; }
+.slot .lab { font-size: 17px; line-height: 1.25; color: var(--muted); }
+.slot .num { font: 700 46px/1.1 var(--mono); font-variant-numeric: tabular-nums; color: var(--chalk); }
+.slot.pending { border-color: var(--gold); }
+.slot.pending .num { color: var(--gold); }
+.x { align-self: center; font: 500 30px var(--mono); color: var(--muted); }
+.total { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.total .eq { font: 500 40px var(--mono); color: var(--muted); }
+.total .big { font: 700 66px/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--gold); }
+.total .note { font-size: 25px; line-height: 1.3; max-width: 560px; }
+.ok { color: var(--gold); font-weight: 700; }
+
+/* scene pieces */
+.split { display: flex; gap: 48px; align-items: flex-start; }
+.deck { display: grid; grid-template-columns: repeat(13, 50px); gap: 6px; }
+.side { display: flex; flex-direction: column; gap: 18px; }
+.side p { margin: 0; font-size: 28px; line-height: 1.3; }
+.lines { display: grid; grid-template-columns: 110px repeat(3, 150px) 60px; gap: 12px 14px; align-items: center; }
+.lines .hdr { font-size: 16px; color: var(--muted); }
+.lines .tag { font: 700 17px var(--mono); color: var(--gold); letter-spacing: .08em; text-transform: uppercase; }
+.chip { background: var(--card); color: var(--ink); border-radius: 10px; padding: 9px 12px; font: 800 27px var(--display); text-align: center; white-space: nowrap; }
+.chip .suit { font-size: 23px; margin-left: 4px; } .r { color: var(--red); }
+.arrow { font: 500 40px var(--mono); color: var(--gold); text-align: center; }
+.shout { font: 800 44px/1.1 var(--display); margin: 0; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.panel { background: var(--well); border: 1px solid var(--line); border-radius: 18px; padding: 26px 28px; display: flex; flex-direction: column; gap: 18px; }
+.panel .groups { display: flex; align-items: center; gap: 18px; }
+.panel .grp { display: flex; gap: 6px; }
+.panel .mid { font: 700 34px var(--mono); color: var(--gold); }
+.panel p { margin: 0; font-size: 26px; line-height: 1.3; }
+.panel b { color: var(--gold); }
+.habits { display: flex; flex-direction: column; gap: 26px; margin-top: 10px; }
+.habit { display: flex; gap: 26px; align-items: baseline; }
+.habit .n { font: 700 70px/1 var(--mono); color: var(--gold); }
+.habit p { margin: 0; font: 800 42px/1.12 var(--display); max-width: 900px; }
+.habit small { display: block; font: 400 24px/1.3 var(--body); color: var(--muted); margin-top: 8px; }
+.rowx { display: flex; gap: 14px; align-items: center; }
+.tee { width: 86px; height: 86px; fill: none; stroke: var(--muted); stroke-width: 3; stroke-linejoin: round; }
+.tee.keep { fill: var(--gold); stroke: var(--gold); }
+.who { width: 78px; height: 78px; border-radius: 50%; border: 3px solid var(--muted); display: grid; place-items: center; font: 700 18px var(--mono); color: var(--muted); }
+.who.bob { background: var(--gold); border-color: var(--gold); color: var(--on-gold); }
+.end { justify-content: center; gap: 30px; }
+.end h2 { font-size: 84px; max-width: 1050px; }
+
+/* caption, guess flag, big play */
+.cap { position: absolute; left: 64px; right: 64px; bottom: 34px; display: flex; justify-content: center; pointer-events: none; }
+.cap span { background: rgba(3, 16, 14, .84); border-radius: 12px; padding: 10px 24px; font-size: 27px; line-height: 1.3; text-align: center; max-width: 1040px; text-wrap: balance; }
+.guess { position: absolute; right: 64px; top: 50px; background: var(--gold); color: var(--on-gold); font: 700 18px var(--mono); letter-spacing: .04em; padding: 9px 18px; border-radius: 999px; }
+.guess[hidden] { display: none; }
+.guess.wait { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 12px rgba(233,185,73,0); transform: scale(1.04); } 0%, 100% { box-shadow: 0 0 0 0 rgba(233,185,73,.55); transform: none; } }
+.bigplay { position: absolute; left: 64px; bottom: 150px; display: flex; align-items: center; gap: 16px; background: var(--gold); color: var(--on-gold); border: 0; border-radius: 999px; padding: 16px 30px 16px 22px; font: 800 28px var(--display); cursor: pointer; box-shadow: 0 16px 30px -14px #000; }
+.bigplay svg { width: 30px; height: 30px; fill: currentColor; }
+.bigplay kbd { font: 500 16px var(--mono); opacity: .75; }
+.bigplay[hidden] { display: none; }
+
+/* controls */
+.controls { display: flex; align-items: center; gap: 12px; padding: 8px 16px 14px; max-width: 1312px; width: 100%; margin: 0 auto; flex-wrap: wrap; }
+.btn { width: 42px; height: 42px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: var(--felt-deep); display: grid; place-items: center; cursor: pointer; }
+.btn:hover { border-color: var(--gold); }
+.btn svg { width: 18px; height: 18px; fill: var(--chalk); }
+.btn.main { background: var(--gold); border-color: var(--gold); width: 48px; height: 48px; }
+.btn.main svg { fill: var(--on-gold); width: 20px; height: 20px; }
+.bar { position: relative; flex: 1; min-width: 160px; height: 26px; cursor: pointer; display: flex; align-items: center; }
+.bar .track { position: relative; width: 100%; height: 8px; border-radius: 4px; background: rgba(238,245,240,.14); overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gold); }
+.bar .tick { position: absolute; top: 5px; width: 2px; height: 16px; background: var(--room); }
+.meta { display: flex; flex-direction: column; min-width: 150px; font: 500 13px var(--mono); color: var(--muted); line-height: 1.35; }
+.meta b { color: var(--chalk); font-weight: 700; }
+.time { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="player" id="player">
+  <div class="viewport" id="viewport">
+    <div class="frame" id="frame">
+      <div class="stage" id="stage">
+
+        <section class="scene active" data-name="Start">
+          <div class="head">
+            <div class="eyebrow">Counting Rules II · second half</div>
+            <h1>The hand that got counted twice</h1>
+            <p class="sub">Poker hands by recipe, one count that comes out double, and the habit that catches it.</p>
+          </div>
+          <div class="fan" data-cards="3D 3C QD QH AC"></div>
+          <button class="bigplay" id="bigplay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>Play <kbd>space</kbd></button>
+        </section>
+
+        <section class="scene" data-name="The deck">
+          <div class="head"><div class="eyebrow">Poker by recipe</div><h2>52 cards. A hand is any 5.</h2></div>
+          <div class="split">
+            <div class="deck" id="deck" data-step="0"></div>
+            <div class="side">
+              <p data-step="1">Pick 5 cards. The order you hold them in does not matter.</p>
+              <div class="total" data-step="2"><span class="big" data-count="2598960">2,598,960</span><span class="note">different hands. About two and a half million.</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scene" data-name="Four of a kind">
+          <div class="head"><div class="eyebrow">Poker by recipe</div><h2>Four of a kind</h2></div>
+          <div class="hand" data-cards="8S 8D 8H 8C 9D"></div>
+          <div class="recipe" data-r="1|which value shows up four times|13;2|value of the odd card|12|3;4|suit of the odd card|4"></div>
+          <div class="total" data-step="5"><span class="eq">=</span><span class="big" data-count="624">624</span><span class="note">hands. About 1 hand in every 4,000.</span></div>
+        </section>
+
+        <section class="scene" data-name="Full house">
+          <div class="head"><div class="eyebrow">Poker by recipe</div><h2>Full house</h2></div>
+          <div class="hand" data-cards="2C 2S 2D JC JD"></div>
+          <div class="recipe" data-r="1|value of the three|13;2|which 3 suits|4;3|value of the pair|12|4;5|which 2 suits|6"></div>
+          <div class="total" data-step="6"><span class="eq">=</span><span class="big" data-count="3744">3,744</span><span class="note">hands. Six times as many as four of a kind, so it is worth less.</span></div>
+        </section>
+
+        <section class="scene" data-name="Two pairs">
+          <div class="head"><div class="eyebrow">The near miss</div><h2>Two pairs</h2></div>
+          <div class="hand" data-cards="3D 3C QD QH AC"></div>
+          <div class="recipe" data-r="1|first pair: value|13;1|its 2 suits|6;2|second pair: value|12;2|its 2 suits|6;3|odd card: value|11;3|its suit|4"></div>
+          <div class="total" data-step="4"><span class="eq">=</span><span class="big" data-count="247104">247,104</span><span class="note">Looks right. It is wrong.</span></div>
+        </section>
+
+        <section class="scene" data-name="Built twice">
+          <div class="head"><div class="eyebrow">The near miss</div><h2>Two recipes. One hand.</h2></div>
+          <div class="split" style="align-items:center">
+            <div class="lines">
+              <span></span><span class="hdr">first pair</span><span class="hdr">second pair</span><span class="hdr">odd card</span><span></span>
+              <span class="tag" data-step="0">Recipe A</span>
+              <span class="chip" data-step="0">3 3 <span class="suit r">♦</span><span class="suit">♣</span></span>
+              <span class="chip" data-step="0">Q Q <span class="suit r">♦</span><span class="suit r">♥</span></span>
+              <span class="chip" data-step="0">A <span class="suit">♣</span></span>
+              <span class="arrow" data-step="0">→</span>
+              <span class="tag" data-step="1">Recipe B</span>
+              <span class="chip" data-step="1">Q Q <span class="suit r">♦</span><span class="suit r">♥</span></span>
+              <span class="chip" data-step="1">3 3 <span class="suit r">♦</span><span class="suit">♣</span></span>
+              <span class="chip" data-step="1">A <span class="suit">♣</span></span>
+              <span class="arrow" data-step="1">→</span>
+            </div>
+            <div class="hand sm" data-cards="3D 3C QD QH AC" style="gap:10px"></div>
+          </div>
+          <p class="shout" data-step="2">Every hand got built twice.</p>
+          <div class="total" data-step="3"><span class="eq">247,104 ÷ 2 =</span><span class="big" data-count="123552">123,552</span><span class="note">hands with two pairs.</span></div>
+        </section>
+
+        <section class="scene" data-name="A second way">
+          <div class="head"><div class="eyebrow">The near miss</div><h2>Count it a second way</h2></div>
+          <div class="hand" data-cards="3D 3C QD QH AC"></div>
+          <div class="recipe" data-r="1|both pair values, picked together|78;2|suits, smaller pair|6;2|suits, bigger pair|6;3|odd card: value|11;3|its suit|4"></div>
+          <div class="total" data-step="4"><span class="eq">=</span><span class="big" data-count="123552">123,552</span><span class="note"><span class="ok">✓ Same number.</span> Two roads, one answer.</span></div>
+        </section>
+
+        <section class="scene" data-name="Why it happened">
+          <div class="head"><div class="eyebrow">The near miss</div><h2>Why was the full house safe?</h2></div>
+          <div class="panels">
+            <div class="panel" data-step="0">
+              <div class="groups"><div class="grp" data-minis="2C 2S 2D"></div><span class="mid">≠</span><div class="grp" data-minis="JC JD"></div></div>
+              <p>A three and a pair are different sizes. They can't trade places. <b>One recipe per hand.</b></p>
+            </div>
+            <div class="panel" data-step="1">
+              <div class="groups"><div class="grp" data-minis="3D 3C"></div><span class="mid">⇄</span><div class="grp" data-minis="QD QH"></div></div>
+              <p>Two pairs are the same size. Swap them and it is the same hand. <b>Two recipes per hand.</b></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="scene" data-name="Every suit">
+          <div class="head"><div class="eyebrow">The near miss</div><h2>One more: a hand with every suit</h2></div>
+          <div class="hand" data-cards="7D KC 3D AH 2S" data-hl="0:3,2:3"></div>
+          <div class="recipe" data-r="1|a value for each suit: 13, four times over|28,561;1|fifth card: its suit|4;1|fifth card: its value|12"></div>
+          <div class="total" data-step="4"><span class="eq">÷ 2 =</span><span class="big" data-count="685464">685,464</span><span class="note">Either diamond could be the fifth card. Two recipes again.</span></div>
+        </section>
+
+        <section class="scene" data-name="Two habits">
+          <div class="head"><div class="eyebrow">The near miss</div><h2>Two habits from the professor</h2></div>
+          <div class="habits">
+            <div class="habit" data-step="0"><span class="n">1</span><p>Ask how many recipes build the same thing. Then divide.</p></div>
+            <div class="habit" data-step="1"><span class="n">2</span><p>Count it a different way. See if the answers match.<small>He said his own research count was giving him two different answers that week.</small></p></div>
+          </div>
+        </section>
+
+        <section class="scene" data-name="Shirts">
+          <div class="head"><div class="eyebrow">Count it twice</div><h2>10 shirts. Keep 3.</h2></div>
+          <div class="rowx" id="shirts" data-step="0"></div>
+          <div class="recipe">
+            <div class="slot" data-step="1"><span class="lab">ways to pick the 3 you keep</span><span class="num">120</span></div>
+            <span class="x" data-step="1">=</span>
+            <div class="slot" data-step="1"><span class="lab">ways to pick the 7 you toss</span><span class="num">120</span></div>
+          </div>
+          <div class="total" data-step="1"><span class="note"><span class="ok">Same choice, told two ways.</span> So the two counts have to match.</span></div>
+        </section>
+
+        <section class="scene" data-name="Teams and Bob">
+          <div class="head"><div class="eyebrow">Count it twice</div><h2>Teams of 3 from 10 people</h2></div>
+          <div class="rowx" id="people" data-step="0"></div>
+          <div class="recipe" data-r="2|teams with Bob: pick 2 more from the other 9|36;3|teams without Bob: pick all 3 from the other 9|84" data-sep="+"></div>
+          <div class="total" data-step="4"><span class="eq">36 + 84 =</span><span class="big" data-count="120">120</span><span class="note"><span class="ok">✓</span> Every team, counted once.</span></div>
+        </section>
+
+        <section class="scene end" data-name="Take it with you">
+          <div class="eyebrow">Take it with you</div>
+          <h2>When a number matters, get it two ways.</h2>
+          <p class="sub">Which count in your own work do you trust a little less now?</p>
+        </section>
+
+        <div class="guess" id="guess" hidden>Guess first · space to reveal</div>
+        <div class="cap"><span id="cap"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn main" id="play" type="button" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="playicon" d="M6 4l14 8-14 8z"/></svg></button>
+    <button class="btn" id="prev" type="button" aria-label="Back one step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+    <button class="btn" id="next" type="button" aria-label="Forward one step"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    <div class="bar" id="bar" role="slider" tabindex="0" aria-label="Position in the video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+    <div class="meta"><b id="chapter">Start</b><span class="time" id="time">0:00 / 0:00</span></div>
+    <button class="btn" id="full" type="button" aria-label="Full screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v2H6v4H4zM14 4h6v6h-2V6h-4zM4 14h2v4h4v2H4zM18 14h2v6h-6v-2h4z"/></svg></button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" };
+  var $ = function (id) { return document.getElementById(id); };
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* What gets said on each step. d = seconds on screen. hold = stop here for a guess. */
+  var SCRIPT = [
+    [{ d: 7, cap: "Last time we got the tools. Today: how a count goes wrong, and how to catch it." }],
+    [{ d: 6, cap: "A deck has 4 suits and 13 values. 4 times 13 is 52 cards." },
+     { d: 6, cap: "A hand is any 5 of them. Shuffle them in your fingers and it is still the same hand." },
+     { d: 7, cap: "That makes about two and a half million hands. How many of them are the good ones?" }],
+    [{ d: 6, cap: "Four cards with the same value, plus one odd card." },
+     { d: 7, cap: "Write a recipe that builds one. First choice: which value shows up four times? 13 ways." },
+     { d: 6, cap: "Second choice: the value of the odd card. How many ways?", hold: true },
+     { d: 6, cap: "12. One value is already used up." },
+     { d: 5, cap: "Last choice: the odd card's suit. 4 ways." },
+     { d: 8, cap: "Multiply the choices. 624 hands. That is about 1 hand in every 4,000." }],
+    [{ d: 6, cap: "Three cards of one value and two of another." },
+     { d: 5, cap: "The value of the three: 13 ways." },
+     { d: 7, cap: "Which three suits? One suit has to sit out, so there are 4 ways." },
+     { d: 6, cap: "Now the value of the pair. How many ways?", hold: true },
+     { d: 8, cap: "12 again. Only one 2 is left in the deck, and one card is not a pair." },
+     { d: 6, cap: "Which two suits for the pair? 6 ways." },
+     { d: 9, cap: "3,744 hands. Six times as many as four of a kind. Easier to get, so it is worth less." }],
+    [{ d: 7, cap: "Two pairs and an odd card. Your turn. Write the recipe, same style as before.", hold: true },
+     { d: 7, cap: "The first pair: 13 values. Then 2 suits out of 4, which is 6 ways." },
+     { d: 6, cap: "The second pair: 12 values left. Its suits: 6 ways again." },
+     { d: 6, cap: "The odd card: 11 values left, and 4 suits." },
+     { d: 8, cap: "Multiply it out. 247,104. It looks right. It is wrong." }],
+    [{ d: 7, cap: "Here is one way the recipe builds this hand. Threes first, then queens." },
+     { d: 7, cap: "Here is another. Queens first, then threes. Same five cards." },
+     { d: 7, cap: "The recipe builds every hand twice. So the count is double." },
+     { d: 8, cap: "Cut it in half. 123,552 hands with two pairs." }],
+    [{ d: 6, cap: "Don't trust one count. Get the number a different way." },
+     { d: 8, cap: "Pick both pair values at once, as a set. No first, no second. 78 ways." },
+     { d: 7, cap: "Suits for the smaller pair, then the bigger pair. 6 ways each." },
+     { d: 5, cap: "Then the odd card. 11 values, 4 suits." },
+     { d: 8, cap: "123,552. Same number. This time each hand has one recipe." }],
+    [{ d: 8, cap: "In a full house, the three and the pair are different sizes. They can't trade places." },
+     { d: 9, cap: "Two pairs are the same size. Swap them and nothing changes. That swap is the double count." }],
+    [{ d: 7, cap: "Five cards, four suits. So one suit shows up twice." },
+     { d: 9, cap: "A value for each suit. Then the fifth card: 4 suits, and 12 values left in that suit." },
+     { d: 7, cap: "Does each hand have one recipe, or more?", hold: true },
+     { d: 7, cap: "Two diamonds. Either one could be called the fifth card. Two recipes again." },
+     { d: 7, cap: "So divide by 2. 685,464 hands." }],
+    [{ d: 8, cap: "Habit one. Pick one finished hand and ask how many recipes could have built it." },
+     { d: 9, cap: "Habit two. Count it a different way. If the answers fight, one of them is wrong." }],
+    [{ d: 6, cap: "You have 10 shirts. You keep 3 and toss 7." },
+     { d: 9, cap: "Picking the 3 to keep and picking the 7 to toss is one choice. 120 ways either way." }],
+    [{ d: 6, cap: "Pick a team of 3 from 10 people. There are 120 teams." },
+     { d: 8, cap: "Every team has Bob, or it doesn't. If Bob is in, how many more do you pick, and from how many?", hold: true },
+     { d: 6, cap: "Bob is in. Pick 2 more from the other 9. 36 teams." },
+     { d: 6, cap: "Bob is out. Pick all 3 from the other 9. 84 teams." },
+     { d: 9, cap: "36 and 84 make 120. Two honest counts of the same pile have to agree." }],
+    [{ d: 10, cap: "When the two counts match, you can believe the number. When they don't, you found a bug first." }]
+  ];
+
+  /* build cards and rows from the short markup */
+  function card(code, cls) {
+    var v = code.slice(0, -1), s = code.slice(-1), el = document.createElement("span");
+    el.className = "pc " + (cls || "") + (s === "H" || s === "D" ? " red" : "");
+    el.dataset.code = code;
+    if (cls === "mini") el.innerHTML = v + '<span class="suit">' + SUIT[s] + "</span>";
+    else el.innerHTML = '<span class="corner">' + v + '<span class="s">' + SUIT[s] + '</span></span><span class="pip">' + SUIT[s] + '</span><span class="corner b">' + v + '<span class="s">' + SUIT[s] + "</span></span>";
+    return el;
+  }
+  document.querySelectorAll("[data-cards]").forEach(function (box) {
+    var fan = box.classList.contains("fan"), hl = {};
+    (box.dataset.hl || "").split(",").forEach(function (p) { if (p) { var a = p.split(":"); hl[a[0]] = a[1]; } });
+    box.dataset.cards.split(" ").forEach(function (c, i) {
+      var el = card(c, box.classList.contains("sm") ? "sm" : "");
+      el.style.setProperty("--i", i);
+      if (!fan) el.dataset.step = "0";
+      if (hl[i] != null) el.dataset.hl = hl[i];
+      box.appendChild(el);
+    });
+  });
+  document.querySelectorAll("[data-minis]").forEach(function (box) {
+    box.dataset.minis.split(" ").forEach(function (c) { box.appendChild(card(c, "mini")); });
+  });
+  (function () {
+    var hero = { "3D": 1, "3C": 1, QD: 1, QH: 1, AC: 1 }, vals = "2 3 4 5 6 7 8 9 10 J Q K A".split(" ");
+    ["S", "H", "D", "C"].forEach(function (s) {
+      vals.forEach(function (v) {
+        var el = card(v + s, "mini");
+        if (hero[v + s]) { el.dataset.hl = "1"; el.classList.add("on"); }
+        $("deck").appendChild(el);
+      });
+    });
+  })();
+  document.querySelectorAll("[data-r]").forEach(function (row) {
+    var sep = row.dataset.sep || "×";
+    row.dataset.r.split(";").forEach(function (part, i) {
+      var a = part.split("|");
+      if (i) { var x = document.createElement("span"); x.className = "x"; x.dataset.step = a[0]; x.textContent = sep; row.appendChild(x); }
+      var s = document.createElement("div");
+      s.className = "slot"; s.dataset.step = a[0]; s.dataset.n = a[2];
+      if (a[3]) s.dataset.reveal = a[3];
+      s.innerHTML = '<span class="lab">' + a[1] + '</span><span class="num">' + a[2] + "</span>";
+      row.appendChild(s);
+    });
+  });
+  for (var i = 0; i < 10; i++) {
+    $("shirts").insertAdjacentHTML("beforeend", '<svg class="tee' + (i < 3 ? " keep" : "") + '" viewBox="0 0 48 48" aria-hidden="true"><path d="M16 6l-12 7 5 9 5-3v23h20V19l5 3 5-9-12-7c-1 4-4 6-8 6s-7-2-8-6z"/></svg>');
+    $("people").insertAdjacentHTML("beforeend", '<span class="who' + (i === 0 ? " bob" : "") + '">' + (i === 0 ? "Bob" : "") + "</span>");
+  }
+
+  /* timeline */
+  var scenes = Array.prototype.slice.call(document.querySelectorAll(".scene"));
+  var flat = [], total = 0;
+  SCRIPT.forEach(function (beats, si) {
+    beats.forEach(function (b, bi) { flat.push({ si: si, bi: bi, start: total, d: b.d, cap: b.cap, hold: !!b.hold }); total += b.d; });
+  });
+  var cur = 0, elapsed = 0, playing = false, waiting = false, last = 0, shownScene = -1, started = false;
+
+  (function () {
+    var track = $("bar"), seen = {};
+    flat.forEach(function (b) {
+      if (seen[b.si] || !b.si) { seen[b.si] = 1; return; }
+      seen[b.si] = 1;
+      var t = document.createElement("i"); t.className = "tick"; t.style.left = (b.start / total * 100) + "%"; track.appendChild(t);
+    });
+  })();
+
+  function fmt(n) { return Number(n).toLocaleString("en-US"); }
+  function countUp(el) {
+    var end = +el.dataset.count;
+    if (reduce) { el.textContent = fmt(end); return; }
+    var t0 = performance.now(), my = (el._run = (el._run || 0) + 1);
+    (function step(now) {
+      if (el._run !== my) return;
+      var p = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.round(end * e));
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function show(i) {
+    cur = Math.max(0, Math.min(flat.length - 1, i));
+    var b = flat[cur], el = scenes[b.si], fresh = shownScene !== b.si;
+    scenes.forEach(function (s, k) { s.classList.toggle("active", k === b.si); });
+    if (fresh) { el.querySelectorAll("[data-step]").forEach(function (n) { n.classList.remove("on"); }); void el.offsetWidth; shownScene = b.si; }
+    el.querySelectorAll("[data-step]").forEach(function (n) {
+      var on = +n.dataset.step <= b.bi, was = n.classList.contains("on");
+      n.classList.toggle("on", on);
+      n.querySelectorAll("[data-count]").forEach(function (c) { if (on && !was && started) countUp(c); else { c._run = (c._run || 0) + 1; c.textContent = fmt(c.dataset.count); } });
+    });
+    el.querySelectorAll("[data-reveal]").forEach(function (n) {
+      var r = +n.dataset.reveal <= b.bi;
+      n.querySelector(".num").textContent = r ? n.dataset.n : "?";
+      n.classList.toggle("pending", !r);
+    });
+    el.querySelectorAll("[data-hl]").forEach(function (n) { n.classList.toggle("hl", +n.dataset.hl <= b.bi); });
+    $("cap").textContent = b.cap;
+    $("guess").hidden = !b.hold;
+    $("chapter").textContent = (b.si + 1) + " of " + scenes.length + " · " + el.dataset.name;
+    draw();
+  }
+  function clock(s) { s = Math.floor(s); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function draw() {
+    var t = flat[cur].start + elapsed;
+    $("fill").style.width = (t / total * 100) + "%";
+    $("time").textContent = clock(t) + " / " + clock(total);
+    $("bar").setAttribute("aria-valuenow", Math.round(t / total * 100));
+    $("playicon").setAttribute("d", playing ? "M6 4h4v16H6zM14 4h4v16h-4z" : "M6 4l14 8-14 8z");
+    $("play").setAttribute("aria-label", playing ? "Pause" : waiting ? "Reveal the answer" : "Play");
+    $("guess").classList.toggle("wait", waiting);
+  }
+  function tick(now) {
+    if (!playing) return;
+    elapsed += (now - last) / 1000; last = now;
+    var b = flat[cur];
+    if (elapsed >= b.d) {
+      if (b.hold) { elapsed = b.d; playing = false; waiting = true; draw(); return; }
+      if (cur < flat.length - 1) { elapsed = 0; show(cur + 1); }
+      else { elapsed = b.d; playing = false; draw(); return; }
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+  function play() {
+    started = true; $("bigplay").hidden = true;
+    if (waiting) { waiting = false; elapsed = 0; show(cur + 1); }
+    else if (cur === flat.length - 1 && elapsed >= flat[cur].d) { elapsed = 0; shownScene = -1; show(0); }
+    playing = true; last = performance.now(); draw(); requestAnimationFrame(tick);
+  }
+  function pause() { playing = false; draw(); }
+  function toggle() { playing ? pause() : play(); }
+  function jump(i) { started = true; $("bigplay").hidden = true; waiting = false; elapsed = 0; show(i); last = performance.now(); }
+  function seek(frac) {
+    var t = Math.max(0, Math.min(.9999, frac)) * total, i = 0;
+    while (i < flat.length - 1 && flat[i + 1].start <= t) i++;
+    started = false; waiting = false; show(i); started = true; $("bigplay").hidden = true;
+    elapsed = t - flat[i].start; last = performance.now(); draw();
+  }
+  function full() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else { var p = $("player").requestFullscreen(); if (p && p.catch) p.catch(function () {}); }
+    } catch (e) {}
+  }
+
+  $("play").addEventListener("click", toggle);
+  $("bigplay").addEventListener("click", function (e) { e.stopPropagation(); play(); });
+  $("frame").addEventListener("click", toggle);
+  $("prev").addEventListener("click", function () { jump(cur - 1); });
+  $("next").addEventListener("click", function () { jump(cur + 1); });
+  $("full").addEventListener("click", full);
+  $("bar").addEventListener("click", function (e) { var r = this.getBoundingClientRect(); seek((e.clientX - r.left) / r.width); });
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var onBtn = e.target && e.target.tagName === "BUTTON";
+    if ((e.key === " " || e.key === "k") && !onBtn) { e.preventDefault(); toggle(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); jump(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); jump(cur - 1); }
+    else if (e.key === "f") full();
+  });
+
+  function fit() {
+    var v = $("viewport"), cs = getComputedStyle(v);
+    var w = v.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    var h = v.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    var fw = Math.max(200, Math.min(w, h * 16 / 9));
+    $("frame").style.width = fw + "px"; $("frame").style.height = (fw * 9 / 16) + "px";
+    $("stage").style.transform = "scale(" + (fw / 1280) + ")";
+  }
+  window.addEventListener("resize", fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe($("viewport"));
+  fit();
+  show(0);
+})();
+</script>
+</body>
+</html>
